@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 export type Genre = "fantasy" | "scifi" | "mystery" | "apocalyptic";
 
@@ -183,12 +183,76 @@ const stepsDeduction = {
   wrong: 50
 };
 
+// Animated steps display component
+function AnimatedSteps({ 
+  steps, 
+  previousSteps,
+  isLow 
+}: { 
+  steps: number; 
+  previousSteps: number;
+  isLow: boolean 
+}) {
+  const [displaySteps, setDisplaySteps] = useState(steps);
+
+  useEffect(() => {
+    if (steps !== previousSteps) {
+      // Animate counting down
+      const duration = 500;
+      const stepsPerFrame = Math.ceil(Math.abs(previousSteps - steps) / (duration / 16));
+      
+      let current = previousSteps;
+      const timer = setInterval(() => {
+        current = current + (steps > previousSteps ? stepsPerFrame : -stepsPerFrame);
+        
+        if ((steps > previousSteps && current >= steps) || (steps < previousSteps && current <= steps)) {
+          current = steps;
+          clearInterval(timer);
+        }
+        setDisplaySteps(current);
+      }, 16);
+
+      return () => clearInterval(timer);
+    }
+  }, [steps, previousSteps]);
+
+  return (
+    <p className={`text-4xl md:text-5xl font-black transition-all duration-300 ${
+      isLow 
+        ? "text-red-400 scale-110 animate-pulse" 
+        : "text-white"
+    }`}>
+      {displaySteps.toLocaleString()}
+    </p>
+  );
+}
+
+// Progress bar component
+function StepsProgressBar({ steps, maxSteps = 1000 }: { steps: number; maxSteps?: number }) {
+  const percentage = Math.max(0, (steps / maxSteps) * 100);
+  
+  return (
+    <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
+      <div 
+        className={`h-full transition-all duration-500 ease-out rounded-full ${
+          percentage > 50 ? "bg-gradient-to-r from-green-400 to-emerald-400" :
+          percentage > 25 ? "bg-gradient-to-r from-yellow-400 to-orange-400" :
+          "bg-gradient-to-r from-red-400 to-pink-500 animate-pulse"
+        }`}
+        style={{ width: `${percentage}%` }}
+      />
+    </div>
+  );
+}
+
 export default function KiloQuestGame() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(null);
   const [resolution, setResolution] = useState<Resolution | null>(null);
   const [selectedGenre, setSelectedGenre] = useState<Genre | null>(null);
   const [showEnding, setShowEnding] = useState(false);
+  const [previousSteps, setPreviousSteps] = useState(1000);
+  const [isAnswering, setIsAnswering] = useState(false);
 
   const startGame = useCallback((genre: Genre) => {
     setSelectedGenre(genre);
@@ -201,10 +265,15 @@ export default function KiloQuestGame() {
     setCurrentChallenge(generateChallenge(genre, 1));
     setResolution(null);
     setShowEnding(false);
+    setPreviousSteps(1000);
+    setIsAnswering(false);
   }, []);
 
   const handleAnswer = useCallback((selectedIndex: number) => {
-    if (!gameState || !currentChallenge) return;
+    if (!gameState || !currentChallenge || isAnswering) return;
+
+    setIsAnswering(true);
+    setPreviousSteps(gameState.steps);
 
     const isCorrect = selectedIndex === currentChallenge.correctIndex;
     const isClose = currentChallenge.isClose(selectedIndex) && !isCorrect;
@@ -215,24 +284,29 @@ export default function KiloQuestGame() {
 
     const newSteps = gameState.steps - deduction;
 
-    setGameState(prev => prev ? ({
-      ...prev,
-      steps: newSteps,
-      totalStepsUsed: prev.totalStepsUsed + deduction
-    }) : null);
+    // Small delay for animation
+    setTimeout(() => {
+      setGameState(prev => prev ? ({
+        ...prev,
+        steps: newSteps,
+        totalStepsUsed: prev.totalStepsUsed + deduction
+      }) : null);
 
-    setResolution({
-      wasCorrect: isCorrect,
-      wasClose: isClose,
-      stepsDeducted: deduction,
-      explanation: currentChallenge.explanation,
-      funFact: currentChallenge.funFact
-    });
+      setResolution({
+        wasCorrect: isCorrect,
+        wasClose: isClose,
+        stepsDeducted: deduction,
+        explanation: currentChallenge.explanation,
+        funFact: currentChallenge.funFact
+      });
 
-    if (newSteps <= 0) {
-      setShowEnding(true);
-    }
-  }, [gameState, currentChallenge]);
+      setIsAnswering(false);
+
+      if (newSteps <= 0) {
+        setShowEnding(true);
+      }
+    }, 300);
+  }, [gameState, currentChallenge, isAnswering]);
 
   const continueGame = useCallback(() => {
     if (!gameState || !selectedGenre) return;
@@ -249,15 +323,23 @@ export default function KiloQuestGame() {
     setResolution(null);
     setSelectedGenre(null);
     setShowEnding(false);
+    setPreviousSteps(1000);
+    setIsAnswering(false);
   }, []);
 
   // Start Screen
   if (!gameState) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 overflow-hidden">
+        {/* Animated background orbs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+        </div>
+
+        <div className="max-w-2xl w-full relative z-10">
           <div className="text-center mb-12">
-            <h1 className="text-5xl md:text-7xl font-black text-white mb-4 tracking-tight">
+            <h1 className="text-5xl md:text-7xl font-black text-white mb-4 tracking-tight animate-bounce">
               KiloQuest
             </h1>
             <p className="text-xl md:text-2xl text-purple-200 font-light">
@@ -268,7 +350,7 @@ export default function KiloQuestGame() {
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20">
+          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 shadow-2xl">
             <h2 className="text-2xl font-bold text-white mb-6 text-center">
               Choose Your Genre
             </h2>
@@ -283,9 +365,11 @@ export default function KiloQuestGame() {
                 <button
                   key={genre.id}
                   onClick={() => startGame(genre.id as Genre)}
-                  className={`p-6 rounded-2xl bg-gradient-to-br ${genre.color} hover:scale-105 transition-transform duration-200 shadow-lg`}
+                  className={`p-6 rounded-2xl bg-gradient-to-br ${genre.color} hover:scale-105 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 shadow-lg group`}
                 >
-                  <span className="text-4xl block mb-2">{genre.emoji}</span>
+                  <span className="text-4xl block mb-2 group-hover:scale-125 transition-transform duration-300">
+                    {genre.emoji}
+                  </span>
                   <span className="text-white font-bold text-lg">{genre.name}</span>
                 </button>
               ))}
@@ -293,7 +377,7 @@ export default function KiloQuestGame() {
 
             <button
               onClick={() => startGame("fantasy")}
-              className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xl rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xl rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95"
             >
               Start Adventure
             </button>
@@ -313,10 +397,17 @@ export default function KiloQuestGame() {
     const archetypeIndex = Math.min(Math.floor(gameState.totalStepsUsed / 300), genreContent[gameState.genre].archetypes.length - 1);
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full">
-          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 text-center">
-            <h1 className="text-4xl md:text-5xl font-black text-white mb-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 overflow-hidden">
+        {/* Celebration particles */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-4 h-4 bg-yellow-400 rounded-full animate-bounce" />
+          <div className="absolute top-1/3 right-1/4 w-3 h-3 bg-pink-400 rounded-full animate-bounce delay-300" />
+          <div className="absolute bottom-1/4 left-1/3 w-5 h-5 bg-purple-400 rounded-full animate-bounce delay-500" />
+        </div>
+
+        <div className="max-w-2xl w-full relative z-10">
+          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 text-center shadow-2xl">
+            <h1 className="text-4xl md:text-5xl font-black text-white mb-6 animate-pulse">
               Adventure Complete
             </h1>
 
@@ -326,14 +417,16 @@ export default function KiloQuestGame() {
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl p-6 mb-8">
+            <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl p-6 mb-8 transform hover:scale-105 transition-transform duration-300">
               <p className="text-purple-200 mb-2">You survived</p>
-              <p className="text-6xl font-black text-white">{gameState.totalStepsUsed} steps</p>
+              <p className="text-6xl font-black text-white animate-bounce">
+                {gameState.totalStepsUsed} steps
+              </p>
             </div>
 
             <div className="mb-8">
               <p className="text-purple-200 mb-2">Your Archetype</p>
-              <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">
+              <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 animate-pulse">
                 {genreContent[gameState.genre].archetypes[archetypeIndex].name}
               </p>
               <p className="text-purple-300/70 mt-2">
@@ -343,7 +436,7 @@ export default function KiloQuestGame() {
 
             <button
               onClick={restartGame}
-              className="py-4 px-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xl rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              className="py-4 px-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xl rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95"
             >
               Play Again
             </button>
@@ -356,18 +449,18 @@ export default function KiloQuestGame() {
   // Resolution Screen
   if (resolution) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 overflow-hidden">
         <div className="max-w-2xl w-full">
-          <div className={`backdrop-blur-lg rounded-3xl p-8 border-2 text-center ${
+          <div className={`backdrop-blur-lg rounded-3xl p-8 border-2 text-center transform animate-in slide-in-from-bottom-4 fade-in duration-500 ${
             resolution.wasCorrect ? "bg-green-500/20 border-green-400" :
             resolution.wasClose ? "bg-yellow-500/20 border-yellow-400" :
             "bg-red-500/20 border-red-400"
           }`}>
-            <div className="text-6xl mb-4">
+            <div className="text-7xl mb-4 animate-bounce">
               {resolution.wasCorrect ? "🎉" : resolution.wasClose ? "🤔" : "❌"}
             </div>
             
-            <h2 className={`text-3xl font-bold mb-4 ${
+            <h2 className={`text-3xl font-bold mb-2 ${
               resolution.wasCorrect ? "text-green-400" :
               resolution.wasClose ? "text-yellow-400" :
               "text-red-400"
@@ -375,21 +468,30 @@ export default function KiloQuestGame() {
               {resolution.wasCorrect ? "Correct!" : resolution.wasClose ? "Close Enough!" : "Wrong"}
             </h2>
 
-            <p className="text-purple-200 mb-4 text-lg">
-              -{resolution.stepsDeducted} Steps
-            </p>
+            <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-white/10 rounded-full">
+              <span className="text-purple-300">Steps deducted:</span>
+              <span className={`text-2xl font-bold ${
+                resolution.wasCorrect ? "text-green-400" :
+                resolution.wasClose ? "text-yellow-400" :
+                "text-red-400"
+              } animate-pulse`}>
+                -{resolution.stepsDeducted}
+              </span>
+            </div>
 
             <div className="bg-white/10 rounded-2xl p-6 mb-6 text-left">
               <p className="text-purple-200 mb-4">{resolution.explanation}</p>
               <div className="border-t border-white/20 pt-4 mt-4">
-                <p className="text-purple-300 font-semibold mb-1">💡 Fun Fact</p>
+                <p className="text-purple-300 font-semibold mb-1 flex items-center gap-2">
+                  <span className="animate-pulse">💡</span> Fun Fact
+                </p>
                 <p className="text-purple-300/80">{resolution.funFact}</p>
               </div>
             </div>
 
             <button
               onClick={continueGame}
-              className="py-4 px-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xl rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              className="py-4 px-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xl rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95"
             >
               Continue Adventure
             </button>
@@ -401,41 +503,54 @@ export default function KiloQuestGame() {
 
   // Game Screen
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 right-10 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl animate-pulse" />
+        <div className="absolute bottom-10 left-10 w-40 h-40 bg-pink-500/10 rounded-full blur-2xl animate-pulse delay-700" />
+      </div>
+
       {/* Header */}
-      <div className="max-w-4xl mx-auto mb-6 text-center">
-        <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">
+      <div className="max-w-4xl mx-auto mb-4 text-center relative z-10">
+        <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight animate-pulse">
           KiloQuest
         </h1>
       </div>
 
       {/* Top Bar */}
-      <div className="max-w-4xl mx-auto mb-6">
-        <div className="flex items-center justify-between bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-white/20">
-          <div className="text-center">
-            <p className="text-purple-300 text-sm uppercase tracking-wider">Steps Left</p>
-            <p className={`text-4xl md:text-5xl font-black ${
-              gameState.steps <= 100 ? "text-red-400 animate-pulse" : "text-white"
-            }`}>
-              {gameState.steps}
-            </p>
+      <div className="max-w-4xl mx-auto mb-4 relative z-10">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-white/20 shadow-xl">
+          {/* Progress Bar */}
+          <div className="mb-3">
+            <StepsProgressBar steps={gameState.steps} />
           </div>
-          <div className="text-center">
-            <p className="text-purple-300 text-sm uppercase tracking-wider">Round</p>
-            <p className="text-3xl font-bold text-white">{gameState.round}</p>
-          </div>
-          <div className="text-center hidden md:block">
-            <p className="text-purple-300 text-sm uppercase tracking-wider">Steps Used</p>
-            <p className="text-2xl font-bold text-purple-200">{gameState.totalStepsUsed}</p>
+          
+          <div className="flex items-center justify-between">
+            <div className="text-center flex-1">
+              <p className="text-purple-300 text-sm uppercase tracking-wider">Steps Left</p>
+              <AnimatedSteps 
+                steps={gameState.steps} 
+                previousSteps={previousSteps}
+                isLow={gameState.steps <= 100}
+              />
+            </div>
+            <div className="text-center flex-1">
+              <p className="text-purple-300 text-sm uppercase tracking-wider">Round</p>
+              <p className="text-3xl font-bold text-white">{gameState.round}</p>
+            </div>
+            <div className="text-center flex-1 hidden md:block">
+              <p className="text-purple-300 text-sm uppercase tracking-wider">Steps Used</p>
+              <p className="text-2xl font-bold text-purple-200">{gameState.totalStepsUsed}</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Story Panel */}
-      <div className="max-w-4xl mx-auto mb-6">
-        <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-6 md:p-8 border border-white/20">
+      <div className="max-w-4xl mx-auto mb-4 relative z-10">
+        <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-6 md:p-8 border border-white/20 shadow-xl animate-in slide-in-from-left-4 fade-in duration-500">
           <div className="flex items-start gap-4">
-            <span className="text-3xl">📖</span>
+            <span className="text-3xl animate-bounce">📖</span>
             <div>
               <p className="text-purple-100 text-lg md:text-xl leading-relaxed">
                 {currentChallenge?.story}
@@ -446,10 +561,10 @@ export default function KiloQuestGame() {
       </div>
 
       {/* Challenge Panel */}
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-lg rounded-3xl p-6 md:p-8 border border-purple-400/30">
+      <div className="max-w-4xl mx-auto relative z-10">
+        <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-lg rounded-3xl p-6 md:p-8 border border-purple-400/30 shadow-xl animate-in slide-in-from-right-4 fade-in duration-500">
           <div className="flex items-center gap-3 mb-6">
-            <span className="text-3xl">🎯</span>
+            <span className="text-3xl animate-pulse">🎯</span>
             <h2 className="text-2xl font-bold text-white">KiloGuess Challenge</h2>
           </div>
 
@@ -462,9 +577,12 @@ export default function KiloQuestGame() {
               <button
                 key={index}
                 onClick={() => handleAnswer(index)}
-                className="w-full p-4 bg-white/10 hover:bg-white/20 border border-white/20 hover:border-purple-400 rounded-xl text-left transition-all duration-200 group"
+                disabled={isAnswering}
+                className={`w-full p-4 bg-white/10 hover:bg-white/20 border border-white/20 hover:border-purple-400 rounded-xl text-left transition-all duration-300 group transform hover:scale-[1.02] active:scale-95 ${
+                  isAnswering ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
-                <span className="inline-block w-8 h-8 bg-purple-500/30 rounded-lg text-center leading-8 mr-3 font-bold text-purple-200 group-hover:bg-purple-500/50 transition-colors">
+                <span className="inline-block w-8 h-8 bg-purple-500/30 rounded-lg text-center leading-8 mr-3 font-bold text-purple-200 group-hover:bg-purple-500/50 group-hover:scale-110 transition-all duration-300">
                   {String.fromCharCode(65 + index)}
                 </span>
                 <span className="text-white text-lg">{option}</span>
@@ -473,9 +591,18 @@ export default function KiloQuestGame() {
           </div>
 
           <div className="mt-6 pt-4 border-t border-white/10 flex justify-between text-sm text-purple-300/60">
-            <span>Correct: -10 steps</span>
-            <span>Close: -25 steps</span>
-            <span>Wrong: -50 steps</span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              Correct: -10
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse delay-200" />
+              Close: -25
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse delay-500" />
+              Wrong: -50
+            </span>
           </div>
         </div>
       </div>
