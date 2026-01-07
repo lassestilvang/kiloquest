@@ -645,9 +645,9 @@ const generateChallenge = (
 };
 
 const stepsDeduction = {
-  correct: 10,
-  close: 25,
-  wrong: 50,
+  correct: 100,
+  close: 250,
+  wrong: 500,
 };
 
 // Animated steps display component
@@ -1346,7 +1346,7 @@ export default function KiloQuestGame() {
                 <p className="text-3xl font-black text-green-400 tabular-nums">
                   {gameState.correctCount}
                 </p>
-                <p className="text-green-400/60 text-xs">-10 steps each</p>
+                <p className="text-green-400/60 text-xs">-100 steps each</p>
               </div>
               <div className="bg-yellow-500/10 rounded-xl p-4 border border-yellow-400/30 text-center">
                 <p className="text-yellow-400 text-xs uppercase tracking-wider mb-1">
@@ -1355,7 +1355,7 @@ export default function KiloQuestGame() {
                 <p className="text-3xl font-black text-yellow-400 tabular-nums">
                   {gameState.closeCount}
                 </p>
-                <p className="text-yellow-400/60 text-xs">-25 steps each</p>
+                <p className="text-yellow-400/60 text-xs">-250 steps each</p>
               </div>
               <div className="bg-red-500/10 rounded-xl p-4 border border-red-400/30 text-center">
                 <p className="text-red-400 text-xs uppercase tracking-wider mb-1">
@@ -1364,7 +1364,7 @@ export default function KiloQuestGame() {
                 <p className="text-3xl font-black text-red-400 tabular-nums">
                   {gameState.wrongCount}
                 </p>
-                <p className="text-red-400/60 text-xs">-50 steps each</p>
+                <p className="text-red-400/60 text-xs">-500 steps each</p>
               </div>
             </div>
 
@@ -1671,19 +1671,19 @@ export default function KiloQuestGame() {
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
                 <span className="text-green-400 text-sm font-medium">
-                  Kilo-Correct: -10
+                  Kilo-Correct: -100
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse delay-200" />
                 <span className="text-yellow-400 text-sm font-medium">
-                  Kilo-Close: -25
+                  Kilo-Close: -250
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse delay-500" />
                 <span className="text-red-400 text-sm font-medium">
-                  Kilo-Wrong: -50
+                  Kilo-Wrong: -500
                 </span>
               </div>
             </div>
