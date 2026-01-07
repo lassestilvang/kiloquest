@@ -733,13 +733,7 @@ export default function KiloQuestGame() {
               ))}
             </div>
 
-            <button
-              onClick={() => startGame("fantasy")}
-              className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xl rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-white/20 translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-              <span className="relative z-10">⚡ Begin Your Kilo-Journey</span>
-            </button>
+
           </div>
 
           <p className="text-center text-purple-400/60 mt-8 text-sm flex items-center justify-center gap-2">
