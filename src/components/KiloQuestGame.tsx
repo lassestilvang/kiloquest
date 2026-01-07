@@ -12,6 +12,7 @@ export interface GameState {
   correctCount: number;
   closeCount: number;
   wrongCount: number;
+  challengeOrder: number[]; // Shuffled order of challenge indices (1-5)
 }
 
 export interface Challenge {
@@ -102,92 +103,113 @@ const genreContent: Record<Genre, {
   }
 };
 
-// KiloGuess challenges for each genre
-const generateChallenge = (genre: Genre, round: number): Challenge => {
-  const challenges: Record<number, Challenge> = {
-    1: {
-      story: genreContent[genre].openingStory.split(".").slice(0, 2).join(".") + ".",
-      question: "Roughly how long is 1,000 seconds?",
-      options: [
-        "About 5 minutes",
-        "About 17 minutes",
-        "About an hour",
-        "About 3 hours"
-      ],
-      correctIndex: 1, // 1000/60 ≈ 16.67 minutes
-      explanation: "1000 seconds divided by 60 gives approximately 16.67 minutes.",
-      funFact: "The average pop song is about 3-4 minutes long, so 1,000 seconds is roughly 4 songs!",
-      isClose: (i) => i === 0 || i === 2 // 5 or 17 min are close
-    },
-    2: {
-      story: "You press forward deeper into the unknown. The path ahead forks into three directions. Each seems to hold its own secrets, but only one leads closer to your goal.",
-      question: "If you stack 1,000 coins (like quarters), how tall would the stack be?",
-      options: [
-        "About as tall as a coffee mug",
-        "About as tall as an adult person",
-        "About as tall as a two-story house",
-        "About as tall as the Eiffel Tower"
-      ],
-      correctIndex: 1, // ~1.75mm × 1000 = ~1.75 meters = adult height
-      explanation: "A quarter is about 1.75mm thick. 1000 × 1.75mm = 1,750mm or about 1.75 meters—roughly the height of an adult.",
-      funFact: "If you stacked 1,000,000 quarters, you'd have a tower about 1.75 km tall—taller than most mountains!",
-      isClose: (i) => i === 0 || i === 2
-    },
-    3: {
-      story: "A challenge appears before you. The ancient ones left this test to prove one's worthiness. Answer wisely, for the cost of failure is steep.",
-      question: "1,000 lines of code is roughly how many pages?",
-      options: [
-        "About 2-3 pages",
-        "About 10-15 pages",
-        "About 50-60 pages",
-        "About 200+ pages"
-      ],
-      correctIndex: 1, // ~30-50 lines per page, so 1000 lines ≈ 20-33 pages
-      explanation: "With typical code formatting (30-50 lines per page), 1,000 lines fill roughly 20-33 pages.",
-      funFact: "The original Pac-Man game had about 3,000 lines of code—a 'tiny' game by today's standards!",
-      isClose: (i) => i === 2 // 50-60 pages is somewhat close
-    },
-    4: {
-      story: "The trial intensifies. Your mind must remain sharp, for the shadows of doubt creep ever closer with each passing moment.",
-      question: "Roughly how far would you walk in 1,000 steps?",
-      options: [
-        "About the length of a school bus",
-        "About the length of a basketball court",
-        "About the length of a soccer field",
-        "About the length of a marathon"
-      ],
-      correctIndex: 1, // ~0.75m per step = 750m = basketball court (28m) × 27 = close to soccer field (105m) but 750m is closer to 7-8 basketball courts
-      explanation: "An average step is about 0.75 meters. 1,000 × 0.75m = 750 meters—roughly the length of 7-8 basketball courts!",
-      funFact: "A marathon is 42,195 meters, so you'd need about 56,000 steps to complete one!",
-      isClose: (i) => i === 2 // soccer field is closer than basketball court to 750m
-    },
-    5: {
-      story: "Your final challenge awaits. The ancient guardians watch, waiting to see if you truly possess the wisdom to complete your quest.",
-      question: "If you read 1,000 words per minute, how long would it take to read a typical novel (80,000 words)?",
-      options: [
-        "About 10 minutes",
-        "About 80 minutes (1.5 hours)",
-        "About 800 minutes (13+ hours)",
-        "About 8,000 minutes (5+ days)"
-      ],
-      correctIndex: 2, // 80,000 / 1000 = 80 minutes
-      explanation: "80,000 words ÷ 1,000 words/minute = 80 minutes (1 hour and 20 minutes).",
-      funFact: "The longest novel ever published, 'In Search of Lost Time,' has about 1.2 million words—it would take 20 hours to read at 1,000 wpm!",
-      isClose: (i) => i === 1 // 80 minutes is close to correct
-    }
-  };
+// Fisher-Yates shuffle algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 
-  // For rounds beyond 5, cycle through with variations
-  if (round > 5) {
+// Generate shuffled challenge order for the game
+const generateChallengeOrder = (): number[] => {
+  return shuffleArray([1, 2, 3, 4, 5]);
+};
+
+// Pre-defined challenges data
+const challengesData: Record<number, Challenge> = {
+  1: {
+    story: "You stand at the entrance of the ancient Crystal Caverns. The cave glows with an ethereal blue light, and whispers of ancient magic echo in the darkness.",
+    question: "Roughly how long is 1,000 seconds?",
+    options: [
+      "About 5 minutes",
+      "About 17 minutes",
+      "About an hour",
+      "About 3 hours"
+    ],
+    correctIndex: 1, // 1000/60 ≈ 16.67 minutes
+    explanation: "1000 seconds divided by 60 gives approximately 16.67 minutes.",
+    funFact: "The average pop song is about 3-4 minutes long, so 1,000 seconds is roughly 4 songs!",
+    isClose: (i) => i === 0 || i === 2 // 5 or 17 min are close
+  },
+  2: {
+    story: "You press forward deeper into the unknown. The path ahead forks into three directions. Each seems to hold its own secrets, but only one leads closer to your goal.",
+    question: "If you stack 1,000 coins (like quarters), how tall would the stack be?",
+    options: [
+      "About as tall as a coffee mug",
+      "About as tall as an adult person",
+      "About as tall as a two-story house",
+      "About as tall as the Eiffel Tower"
+    ],
+    correctIndex: 1, // ~1.75mm × 1000 = ~1.75 meters = adult height
+    explanation: "A quarter is about 1.75mm thick. 1000 × 1.75mm = 1,750mm or about 1.75 meters—roughly the height of an adult.",
+    funFact: "If you stacked 1,000,000 quarters, you'd have a tower about 1.75 km tall—taller than most mountains!",
+    isClose: (i) => i === 0 || i === 2
+  },
+  3: {
+    story: "A challenge appears before you. The ancient ones left this test to prove one's worthiness. Answer wisely, for the cost of failure is steep.",
+    question: "1,000 lines of code is roughly how many pages?",
+    options: [
+      "About 2-3 pages",
+      "About 10-15 pages",
+      "About 50-60 pages",
+      "About 200+ pages"
+    ],
+    correctIndex: 1, // ~30-50 lines per page, so 1000 lines ≈ 20-33 pages
+    explanation: "With typical code formatting (30-50 lines per page), 1,000 lines fill roughly 20-33 pages.",
+    funFact: "The original Pac-Man game had about 3,000 lines of code—a 'tiny' game by today's standards!",
+    isClose: (i) => i === 2 // 50-60 pages is somewhat close
+  },
+  4: {
+    story: "The trial intensifies. Your mind must remain sharp, for the shadows of doubt creep ever closer with each passing moment.",
+    question: "Roughly how far would you walk in 1,000 steps?",
+    options: [
+      "About the length of a school bus",
+      "About the length of a basketball court",
+      "About the length of a soccer field",
+      "About the length of a marathon"
+    ],
+    correctIndex: 1, // ~0.75m per step = 750m = basketball court (28m) × 27 = close to soccer field (105m) but 750m is closer to 7-8 basketball courts
+    explanation: "An average step is about 0.75 meters. 1,000 × 0.75m = 750 meters—roughly the length of 7-8 basketball courts!",
+    funFact: "A marathon is 42,195 meters, so you'd need about 56,000 steps to complete one!",
+    isClose: (i) => i === 2 // soccer field is closer than basketball court to 750m
+  },
+  5: {
+    story: "Your final challenge awaits. The ancient guardians watch, waiting to see if you truly possess the wisdom to complete your quest.",
+    question: "If you read 1,000 words per minute, how long would it take to read a typical novel (80,000 words)?",
+    options: [
+      "About 10 minutes",
+      "About 80 minutes (1.5 hours)",
+      "About 800 minutes (13+ hours)",
+      "About 8,000 minutes (5+ days)"
+    ],
+    correctIndex: 2, // 80,000 / 1000 = 80 minutes
+    explanation: "80,000 words ÷ 1,000 words/minute = 80 minutes (1 hour and 20 minutes).",
+    funFact: "The longest novel ever published, 'In Search of Lost Time,' has about 1.2 million words—it would take 20 hours to read at 1,000 wpm!",
+    isClose: (i) => i === 1 // 80 minutes is close to correct
+  }
+};
+
+// Generate a challenge for a given round
+const generateChallenge = (genre: Genre, round: number, challengeOrder: number[]): Challenge => {
+  let challengeIndex: number;
+  
+  if (round <= 5) {
+    challengeIndex = challengeOrder[round - 1];
+  } else {
+    // For rounds beyond 5, cycle through with variations
     const cycleRound = ((round - 1) % 5) + 1;
-    const base = challenges[cycleRound];
+    const baseIndex = challengeOrder[cycleRound - 1];
+    const base = challengesData[baseIndex];
     return {
       ...base,
       story: `Round ${round}: Your journey continues. The challenges grow more complex, but your kilo-wisdom has grown stronger.`
     };
   }
 
-  return challenges[round];
+  return challengesData[challengeIndex];
 };
 
 const stepsDeduction = {
@@ -296,6 +318,7 @@ export default function KiloQuestGame() {
   const [isAnswering, setIsAnswering] = useState(false);
 
   const startGame = useCallback((genre: Genre) => {
+    const challengeOrder = generateChallengeOrder();
     setSelectedGenre(genre);
     setGameState({
       steps: 1000,
@@ -304,9 +327,10 @@ export default function KiloQuestGame() {
       totalStepsUsed: 0,
       correctCount: 0,
       closeCount: 0,
-      wrongCount: 0
+      wrongCount: 0,
+      challengeOrder
     });
-    setCurrentChallenge(generateChallenge(genre, 1));
+    setCurrentChallenge(generateChallenge(genre, 1, challengeOrder));
     setResolution(null);
     setShowEnding(false);
     setPreviousSteps(1000);
@@ -360,7 +384,7 @@ export default function KiloQuestGame() {
 
     const nextRound = gameState.round + 1;
     setGameState(prev => prev ? ({ ...prev, round: nextRound }) : null);
-    setCurrentChallenge(generateChallenge(selectedGenre, nextRound));
+    setCurrentChallenge(generateChallenge(selectedGenre, nextRound, gameState.challengeOrder));
     setResolution(null);
   }, [gameState, selectedGenre]);
 
