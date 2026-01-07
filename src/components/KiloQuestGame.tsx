@@ -22,6 +22,7 @@ export interface Challenge {
   correctIndex: number;
   explanation: string;
   funFact: string;
+  category: QuestionCategory;
   isClose: (selectedIndex: number) => boolean;
 }
 
@@ -103,6 +104,324 @@ const genreContent: Record<Genre, {
   }
 };
 
+// Question categories for variety
+type QuestionCategory = "scale" | "conceptual" | "kilo_feature";
+
+// Kilo feature questions - at least 1 in every 3 should be a Kilo feature question
+const KILO_FEATURE_QUESTIONS: Challenge[] = [
+  {
+    story: "You discover a Kilo-powered terminal glowing with blue light. A holographic guide appears, offering wisdom about the platform's capabilities.",
+    question: "What is Kilo's App Builder primarily designed to help developers do?",
+    options: [
+      "Write complex algorithms from scratch",
+      "Create full-stack web and mobile applications without extensive coding",
+      "Manage database migrations manually",
+      "Deploy raw server infrastructure"
+    ],
+    correctIndex: 1,
+    explanation: "Kilo's App Builder helps developers create full-stack applications with minimal manual coding, handling much of the boilerplate automatically.",
+    funFact: "App Builder can generate complete application scaffolds in seconds, handling both frontend and backend components.",
+    isClose: (i) => i === 0,
+    category: "kilo_feature"
+  },
+  {
+    story: "A sleek Kilo interface displays the Cloud Agents panel. The agents are humming with activity, each handling different tasks autonomously.",
+    question: "Which best describes what Kilo's Cloud Agents provide?",
+    options: [
+      "Physical server maintenance",
+      "Autonomous AI-powered tasks that handle complex workflows without constant supervision",
+      "Manual code review services",
+      "Hardware rental services"
+    ],
+    correctIndex: 1,
+    explanation: "Cloud Agents are AI-powered autonomous workers that can manage complex tasks and workflows independently.",
+    funFact: "Cloud Agents can handle everything from data processing to customer support automation without human intervention.",
+    isClose: (i) => i === 0,
+    category: "kilo_feature"
+  },
+  {
+    story: "You find a Kilo dashboard showing Managed Indexing. Vectors are being organized automatically, optimizing search and retrieval.",
+    question: "What problem does Kilo's Managed Indexing solve for developers?",
+    options: [
+      "Manually configuring server clusters",
+      "Automatically organizing and optimizing vector databases for efficient AI retrieval",
+      "Writing SQL queries by hand",
+      "Managing DNS settings"
+    ],
+    correctIndex: 1,
+    explanation: "Managed Indexing automates the complex task of organizing vector data for optimal AI-powered search and retrieval.",
+    funFact: "With Managed Indexing, you can set up enterprise-grade vector search in minutes instead of weeks.",
+    isClose: (i) => i === 0,
+    category: "kilo_feature"
+  },
+  {
+    story: "The Kilo deployment panel shows a single button glowing with potential. One click and entire applications go live.",
+    question: "What is the main benefit of Kilo's one-click deploy feature?",
+    options: [
+      "Reducing deployment to a single mouse click, eliminating complex configuration",
+      "Automatically writing all your code",
+      "Replacing your entire development team",
+      "Eliminating the need for testing"
+    ],
+    correctIndex: 0,
+    explanation: "One-click deploy dramatically simplifies the deployment process, turning complex multi-step deployments into a single action.",
+    funFact: "What traditionally takes hours of DevOps work can be accomplished with a single button press.",
+    isClose: (i) => i === 1,
+    category: "kilo_feature"
+  },
+  {
+    story: "You access the Kilo coding environment. AI assistance is everywhere, suggesting improvements and catching bugs in real-time.",
+    question: "How does AI-assisted coding in Kilo help developers?",
+    options: [
+      "Replacing developers entirely",
+      "Providing intelligent suggestions, code completion, and bug detection while you code",
+      "Automatically deleting problematic code",
+      "Writing documentation only"
+    ],
+    correctIndex: 1,
+    explanation: "AI-assisted coding augments developers with smart suggestions, autocompletion, and real-time error detection.",
+    funFact: "AI-assisted coding can increase developer productivity by 2-3x by handling repetitive patterns and catching errors early.",
+    isClose: (i) => i === 0,
+    category: "kilo_feature"
+  },
+  {
+    story: "A Kilo wizard appears, offering to test your understanding of the platform's ecosystem.",
+    question: "Which of the following best describes Kilo's overall platform approach?",
+    options: [
+      "A comprehensive AI development platform combining app building, autonomous agents, and intelligent deployment",
+      "A simple code editor with basic syntax highlighting",
+      "A hardware manufacturing service",
+      "A social network for developers"
+    ],
+    correctIndex: 0,
+    explanation: "Kilo provides an integrated platform with multiple AI-powered tools for the full application development lifecycle.",
+    funFact: "Kilo's platform combines 5+ major features into one cohesive environment for AI-powered development.",
+    isClose: (i) => false,
+    category: "kilo_feature"
+  }
+];
+
+// Scale/estimation questions (real-world comparisons)
+const SCALE_QUESTIONS: Challenge[] = [
+  {
+    story: "You stand at the entrance of the ancient Crystal Caverns. The cave glows with an ethereal blue light, and whispers of ancient magic echo in the darkness.",
+    question: "Roughly how long is 1,000 seconds?",
+    options: [
+      "About 5 minutes",
+      "About 17 minutes",
+      "About an hour",
+      "About 3 hours"
+    ],
+    correctIndex: 1,
+    explanation: "1000 seconds divided by 60 gives approximately 16.67 minutes.",
+    funFact: "The average pop song is about 3-4 minutes long, so 1,000 seconds is roughly 4 songs!",
+    isClose: (i) => i === 0 || i === 2,
+    category: "scale"
+  },
+  {
+    story: "You press forward deeper into the unknown. The path ahead forks into three directions. Each seems to hold its own secrets, but only one leads closer to your goal.",
+    question: "If you stack 1,000 coins (like quarters), how tall would the stack be?",
+    options: [
+      "About as tall as a coffee mug",
+      "About as tall as an adult person",
+      "About as tall as a two-story house",
+      "About as tall as the Eiffel Tower"
+    ],
+    correctIndex: 1,
+    explanation: "A quarter is about 1.75mm thick. 1000 × 1.75mm = 1,750mm or about 1.75 meters—roughly the height of an adult.",
+    funFact: "If you stacked 1,000,000 quarters, you'd have a tower about 1.75 km tall—taller than most mountains!",
+    isClose: (i) => i === 0 || i === 2,
+    category: "scale"
+  },
+  {
+    story: "A challenge appears before you. The ancient ones left this test to prove one's worthiness. Answer wisely, for the cost of failure is steep.",
+    question: "1,000 lines of code is roughly how many pages?",
+    options: [
+      "About 2-3 pages",
+      "About 10-15 pages",
+      "About 50-60 pages",
+      "About 200+ pages"
+    ],
+    correctIndex: 1,
+    explanation: "With typical code formatting (30-50 lines per page), 1,000 lines fill roughly 20-33 pages.",
+    funFact: "The original Pac-Man game had about 3,000 lines of code—a 'tiny' game by today's standards!",
+    isClose: (i) => i === 2,
+    category: "scale"
+  },
+  {
+    story: "The trial intensifies. Your mind must remain sharp, for the shadows of doubt creep ever closer with each passing moment.",
+    question: "Roughly how far would you walk in 1,000 steps?",
+    options: [
+      "About the length of a school bus",
+      "About the length of a basketball court",
+      "About the length of a soccer field",
+      "About the length of a marathon"
+    ],
+    correctIndex: 1,
+    explanation: "An average step is about 0.75 meters. 1,000 × 0.75m = 750 meters—roughly the length of 7-8 basketball courts!",
+    funFact: "A marathon is 42,195 meters, so you'd need about 56,000 steps to complete one!",
+    isClose: (i) => i === 2,
+    category: "scale"
+  },
+  {
+    story: "Your final challenge awaits. The ancient guardians watch, waiting to see if you truly possess the wisdom to complete your quest.",
+    question: "If you read 1,000 words per minute, how long would it take to read a typical novel (80,000 words)?",
+    options: [
+      "About 10 minutes",
+      "About 80 minutes (1.5 hours)",
+      "About 800 minutes (13+ hours)",
+      "About 8,000 minutes (5+ days)"
+    ],
+    correctIndex: 2,
+    explanation: "80,000 words ÷ 1,000 words/minute = 80 minutes (1 hour and 20 minutes).",
+    funFact: "The longest novel ever published, 'In Search of Lost Time,' has about 1.2 million words—it would take 20 hours to read at 1,000 wpm!",
+    isClose: (i) => i === 1,
+    category: "scale"
+  },
+  {
+    story: "You encounter a massive library filled with scrolls. The librarian asks: how much can 1GB really hold?",
+    question: "Approximately how many photos can 1GB of storage hold?",
+    options: [
+      "About 50 photos",
+      "About 200-300 photos",
+      "About 1,000-2,000 photos",
+      "About 10,000+ photos"
+    ],
+    correctIndex: 2,
+    explanation: "A typical smartphone photo is 0.5-1MB. So 1GB (1024MB) can hold roughly 200-2,000 photos depending on quality.",
+    funFact: "The average person takes 1,500+ photos per year—that's about 1.5-3GB of storage!",
+    isClose: (i) => i === 1,
+    category: "scale"
+  },
+  {
+    story: "A futuristic display shows the world's data. You need to understand scale.",
+    question: "Roughly how many web pages exist on the internet today?",
+    options: [
+      "About 1 million",
+      "About 50 million",
+      "About 1-2 billion",
+      "About 100 billion+"
+    ],
+    correctIndex: 2,
+    explanation: "Google alone indexes over 1 billion web pages, with estimates suggesting 2-5 billion publicly accessible pages.",
+    funFact: "If you spent just 1 second on each page, it would take 30+ years to see them all!",
+    isClose: (i) => i === 3,
+    category: "scale"
+  },
+  {
+    story: "You face a temporal puzzle. Time itself seems to bend around this question.",
+    question: "How many heartbeats does the average human have in a lifetime?",
+    options: [
+      "About 100 million",
+      "About 500 million",
+      "About 2-3 billion",
+      "About 10 billion"
+    ],
+    correctIndex: 2,
+    explanation: "At 70 bpm × 60 × 24 × 365 × 80 years ≈ 2.9 billion beats.",
+    funFact: "Your heart beats about 100,000 times per day—enough to fill a small swimming pool!",
+    isClose: (i) => i === 1,
+    category: "scale"
+  }
+];
+
+// Conceptual/intuition questions
+const CONCEPTUAL_QUESTIONS: Challenge[] = [
+  {
+    story: "A wise sage appears, testing your understanding of computational intuition.",
+    question: "If you doubled a number every day for 30 days, how large would it be compared to the starting number?",
+    options: [
+      "About 100 times larger",
+      "About 1,000 times larger",
+      "About 1 billion times larger",
+      "About 1 trillion times larger"
+    ],
+    correctIndex: 2,
+    explanation: "2^30 = 1,073,741,824 ≈ 1 billion. Exponential growth is surprisingly powerful!",
+    funFact: "This is why small habits compound dramatically—like how investing early pays off enormously.",
+    isClose: (i) => i === 3,
+    category: "conceptual"
+  },
+  {
+    story: "An ancient algorithm master challenges you with a classic problem.",
+    question: "If you had a chessboard with 1 grain of rice on the first square, 2 on the second, 4 on the third (doubling each time), how many grains would be on the last square?",
+    options: [
+      "About 1 million grains",
+      "About 100 million grains",
+      "About 9×10^18 grains (9 quintillion)",
+      "About 1×10^24 grains"
+    ],
+    correctIndex: 2,
+    explanation: "2^63 = 9,223,372,036,854,775,808 ≈ 9×10^18. This is the famous wheat and chessboard problem!",
+    funFact: "9 quintillion grains of rice would cover the entire country of India about 1 meter deep!",
+    isClose: (i) => i === 1,
+    category: "conceptual"
+  },
+  {
+    story: "You encounter a neural network visualization. Understanding scales of AI power is key.",
+    question: "Modern large language models often have billions of parameters. Roughly how many 'connections' might a 100-billion parameter model have?",
+    options: [
+      "About 10 million",
+      "About 1 billion",
+      "About 100 billion",
+      "About 10 trillion"
+    ],
+    correctIndex: 2,
+    explanation: "Each parameter is essentially a connection between neurons in the network—so 100B parameters = 100B connections.",
+    funFact: "The human brain has about 100 trillion synapses—so we're still smaller than biological neural networks!",
+    isClose: (i) => i === 3,
+    category: "conceptual"
+  },
+  {
+    story: "A quantum computing oracle poses a question about processing power.",
+    question: "Quantum computers exploit superposition. A quantum bit (qubit) can represent multiple states at once. How might 50 qubits compare to a classical computer's representation?",
+    options: [
+      "About 50 times more powerful",
+      "About 1,000 times more powerful",
+      "About 1 quadrillion times more powerful",
+      "Cannot be directly compared"
+    ],
+    correctIndex: 2,
+    explanation: "50 qubits can represent 2^50 ≈ 1 quadrillion states simultaneously—a quantum advantage.",
+    funFact: "This is why quantum computers could solve certain problems (like cryptography) exponentially faster!",
+    isClose: (i) => i === 3,
+    category: "conceptual"
+  },
+  {
+    story: "You face a probability paradox that challenges your intuition.",
+    question: "In a group of 23 people, what's the probability that at least two share the same birthday?",
+    options: [
+      "Less than 1%",
+      "About 25%",
+      "About 50%",
+      "Over 50%"
+    ],
+    correctIndex: 3,
+    explanation: "Surprisingly, with 23 people, the probability is about 50.7%! This is the famous birthday paradox.",
+    funFact: "With 70 people, the probability jumps to 99.9%!",
+    isClose: (i) => i === 2,
+    category: "conceptual"
+  },
+  {
+    story: "A master of data compression challenges your understanding of information theory.",
+    question: "What's the theoretical limit of lossless data compression?",
+    options: [
+      "50% reduction",
+      "90% reduction",
+      "No theoretical limit—you can always compress more",
+      "You cannot compress random data at all"
+    ],
+    correctIndex: 3,
+    explanation: "Random data is incompressible—it has no patterns to exploit. This is a fundamental information theory result.",
+    funFact: "This is why compression works great on documents and images but poorly on already-compressed files!",
+    isClose: (i) => false,
+    category: "conceptual"
+  }
+];
+
+// Combine all questions
+const ALL_QUESTIONS = [...SCALE_QUESTIONS, ...CONCEPTUAL_QUESTIONS, ...KILO_FEATURE_QUESTIONS];
+
 // Fisher-Yates shuffle algorithm
 const shuffleArray = <T,>(array: T[]): T[] => {
   const shuffled = [...array];
@@ -118,98 +437,48 @@ const generateChallengeOrder = (): number[] => {
   return shuffleArray([1, 2, 3, 4, 5]);
 };
 
-// Pre-defined challenges data
-const challengesData: Record<number, Challenge> = {
-  1: {
-    story: "You stand at the entrance of the ancient Crystal Caverns. The cave glows with an ethereal blue light, and whispers of ancient magic echo in the darkness.",
-    question: "Roughly how long is 1,000 seconds?",
-    options: [
-      "About 5 minutes",
-      "About 17 minutes",
-      "About an hour",
-      "About 3 hours"
-    ],
-    correctIndex: 1, // 1000/60 ≈ 16.67 minutes
-    explanation: "1000 seconds divided by 60 gives approximately 16.67 minutes.",
-    funFact: "The average pop song is about 3-4 minutes long, so 1,000 seconds is roughly 4 songs!",
-    isClose: (i) => i === 0 || i === 2 // 5 or 17 min are close
-  },
-  2: {
-    story: "You press forward deeper into the unknown. The path ahead forks into three directions. Each seems to hold its own secrets, but only one leads closer to your goal.",
-    question: "If you stack 1,000 coins (like quarters), how tall would the stack be?",
-    options: [
-      "About as tall as a coffee mug",
-      "About as tall as an adult person",
-      "About as tall as a two-story house",
-      "About as tall as the Eiffel Tower"
-    ],
-    correctIndex: 1, // ~1.75mm × 1000 = ~1.75 meters = adult height
-    explanation: "A quarter is about 1.75mm thick. 1000 × 1.75mm = 1,750mm or about 1.75 meters—roughly the height of an adult.",
-    funFact: "If you stacked 1,000,000 quarters, you'd have a tower about 1.75 km tall—taller than most mountains!",
-    isClose: (i) => i === 0 || i === 2
-  },
-  3: {
-    story: "A challenge appears before you. The ancient ones left this test to prove one's worthiness. Answer wisely, for the cost of failure is steep.",
-    question: "1,000 lines of code is roughly how many pages?",
-    options: [
-      "About 2-3 pages",
-      "About 10-15 pages",
-      "About 50-60 pages",
-      "About 200+ pages"
-    ],
-    correctIndex: 1, // ~30-50 lines per page, so 1000 lines ≈ 20-33 pages
-    explanation: "With typical code formatting (30-50 lines per page), 1,000 lines fill roughly 20-33 pages.",
-    funFact: "The original Pac-Man game had about 3,000 lines of code—a 'tiny' game by today's standards!",
-    isClose: (i) => i === 2 // 50-60 pages is somewhat close
-  },
-  4: {
-    story: "The trial intensifies. Your mind must remain sharp, for the shadows of doubt creep ever closer with each passing moment.",
-    question: "Roughly how far would you walk in 1,000 steps?",
-    options: [
-      "About the length of a school bus",
-      "About the length of a basketball court",
-      "About the length of a soccer field",
-      "About the length of a marathon"
-    ],
-    correctIndex: 1, // ~0.75m per step = 750m = basketball court (28m) × 27 = close to soccer field (105m) but 750m is closer to 7-8 basketball courts
-    explanation: "An average step is about 0.75 meters. 1,000 × 0.75m = 750 meters—roughly the length of 7-8 basketball courts!",
-    funFact: "A marathon is 42,195 meters, so you'd need about 56,000 steps to complete one!",
-    isClose: (i) => i === 2 // soccer field is closer than basketball court to 750m
-  },
-  5: {
-    story: "Your final challenge awaits. The ancient guardians watch, waiting to see if you truly possess the wisdom to complete your quest.",
-    question: "If you read 1,000 words per minute, how long would it take to read a typical novel (80,000 words)?",
-    options: [
-      "About 10 minutes",
-      "About 80 minutes (1.5 hours)",
-      "About 800 minutes (13+ hours)",
-      "About 8,000 minutes (5+ days)"
-    ],
-    correctIndex: 2, // 80,000 / 1000 = 80 minutes
-    explanation: "80,000 words ÷ 1,000 words/minute = 80 minutes (1 hour and 20 minutes).",
-    funFact: "The longest novel ever published, 'In Search of Lost Time,' has about 1.2 million words—it would take 20 hours to read at 1,000 wpm!",
-    isClose: (i) => i === 1 // 80 minutes is close to correct
-  }
-};
+// Keep track of Kilo feature question usage
+let kiloFeatureRoundTracker = 0;
 
-// Generate a challenge for a given round
+// Generate a challenge for a given round with proper Kilo feature distribution
 const generateChallenge = (genre: Genre, round: number, challengeOrder: number[]): Challenge => {
-  let challengeIndex: number;
+  // Ensure 1 out of every 3 questions is a Kilo feature question
+  const shouldBeKiloFeature = round % 3 === 0;
   
-  if (round <= 5) {
-    challengeIndex = challengeOrder[round - 1];
-  } else {
-    // For rounds beyond 5, cycle through with variations
-    const cycleRound = ((round - 1) % 5) + 1;
-    const baseIndex = challengeOrder[cycleRound - 1];
-    const base = challengesData[baseIndex];
-    return {
-      ...base,
-      story: `Round ${round}: Your journey continues. The challenges grow more complex, but your kilo-wisdom has grown stronger.`
+  let challenge: Challenge;
+  
+  if (shouldBeKiloFeature && kiloFeatureRoundTracker < KILO_FEATURE_QUESTIONS.length) {
+    // Return a Kilo feature question
+    challenge = { ...KILO_FEATURE_QUESTIONS[kiloFeatureRoundTracker % KILO_FEATURE_QUESTIONS.length] };
+    kiloFeatureRoundTracker++;
+    
+    // Adapt story to genre
+    const genreStories: Record<Genre, string> = {
+      fantasy: "Ancient Kilo runes glow before you, revealing secrets of the platform's power...",
+      scifi: "Your ship's Kilo interface illuminates, offering technical wisdom...",
+      mystery: "Evidence points to Kilo's capabilities—you must deduce the truth...",
+      apocalyptic: "A pre-war Kilo terminal still functions, dispensing crucial knowledge..."
     };
+    
+    challenge.story = `${genreStories[genre]} ${challenge.story}`;
+  } else {
+    // Return scale or conceptual question
+    const nonFeatureQuestions = [...SCALE_QUESTIONS, ...CONCEPTUAL_QUESTIONS];
+    const index = (round - 1) % nonFeatureQuestions.length;
+    challenge = { ...nonFeatureQuestions[index] };
+    
+    // Adapt story to genre
+    const genreStories: Record<Genre, string> = {
+      fantasy: "The Crystal Caverns shimmer with ancient wisdom...",
+      scifi: "The Starship Odyssey's sensors detect an estimation challenge...",
+      mystery: "Lord Blackwood's study holds the key to this puzzle...",
+      apocalyptic: "The bunker's filtration system needs calibration..."
+    };
+    
+    challenge.story = `${genreStories[genre]} ${challenge.story}`;
   }
-
-  return challengesData[challengeIndex];
+  
+  return challenge;
 };
 
 const stepsDeduction = {
