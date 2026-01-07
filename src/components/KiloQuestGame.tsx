@@ -402,6 +402,13 @@ export default function KiloQuestGame() {
   // Game Screen
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+      {/* Header */}
+      <div className="max-w-4xl mx-auto mb-6 text-center">
+        <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">
+          KiloQuest
+        </h1>
+      </div>
+
       {/* Top Bar */}
       <div className="max-w-4xl mx-auto mb-6">
         <div className="flex items-center justify-between bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-white/20">
