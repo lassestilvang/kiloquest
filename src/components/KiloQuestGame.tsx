@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 export type Genre = "fantasy" | "scifi" | "mystery" | "apocalyptic";
 
@@ -13,6 +13,7 @@ export interface GameState {
   closeCount: number;
   wrongCount: number;
   challengeOrder: number[]; // Shuffled order of challenge indices (1-5)
+  startTime?: number; // Timestamp when game started
 }
 
 export interface Challenge {
@@ -585,6 +586,8 @@ export default function KiloQuestGame() {
   const [showEnding, setShowEnding] = useState(false);
   const [previousSteps, setPreviousSteps] = useState(1000);
   const [isAnswering, setIsAnswering] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showShareCard, setShowShareCard] = useState(false);
 
   const startGame = useCallback((genre: Genre) => {
     const challengeOrder = generateChallengeOrder();
@@ -597,13 +600,16 @@ export default function KiloQuestGame() {
       correctCount: 0,
       closeCount: 0,
       wrongCount: 0,
-      challengeOrder
+      challengeOrder,
+      startTime: Date.now()
     });
     setCurrentChallenge(generateChallenge(genre, 1, challengeOrder));
     setResolution(null);
     setShowEnding(false);
     setPreviousSteps(1000);
     setIsAnswering(false);
+    setCopied(false);
+    setShowShareCard(false);
   }, []);
 
   const handleAnswer = useCallback((selectedIndex: number) => {
@@ -665,6 +671,8 @@ export default function KiloQuestGame() {
     setShowEnding(false);
     setPreviousSteps(1000);
     setIsAnswering(false);
+    setCopied(false);
+    setShowShareCard(false);
   }, []);
 
   // Start Screen
@@ -745,109 +753,390 @@ export default function KiloQuestGame() {
     );
   }
 
-  // Ending Screen
-  if (showEnding) {
+  // Social Share Component
+  function ShareButtons({ stats, genre, accuracy, title }: { 
+    stats: { steps: number; rounds: number; correct: number; close: number; wrong: number };
+    genre: string;
+    accuracy: number;
+    title: string;
+  }) {
+    const shareText = `🎮 Just completed KiloQuest ${genre} with ${stats.rounds} rounds, ${accuracy}% accuracy, and earned the "${title}" title! Can you beat my score? #KiloQuest #KiloGuess`;
+    const shareUrl = "https://kiloquest.demo";
+
+    const shareLinks = {
+      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
+    };
+
+    const handleCopy = async () => {
+      try {
+        await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error("Failed to copy:", err);
+      }
+    };
+
+    return (
+      <div className="flex flex-wrap justify-center gap-3 mb-6">
+        <a
+          href={shareLinks.twitter}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2]/80 hover:bg-[#1DA1F2] text-white rounded-xl font-medium transition-all duration-300 hover:scale-105"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          Share on X
+        </a>
+        <a
+          href={shareLinks.facebook}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-2 bg-[#4267B2]/80 hover:bg-[#4267B2] text-white rounded-xl font-medium transition-all duration-300 hover:scale-105"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          Facebook
+        </a>
+        <a
+          href={shareLinks.linkedin}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-2 bg-[#0A66C2]/80 hover:bg-[#0A66C2] text-white rounded-xl font-medium transition-all duration-300 hover:scale-105"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          LinkedIn
+        </a>
+        <button
+          onClick={handleCopy}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 hover:scale-105 ${
+            copied 
+              ? "bg-green-500/80 text-white" 
+              : "bg-white/20 hover:bg-white/30 text-white"
+          }`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+          {copied ? "Copied!" : "Copy Link"}
+        </button>
+      </div>
+    );
+  }
+
+  // Achievement Badge Component
+  function AchievementBadge({ 
+    icon, 
+    name, 
+    description, 
+    earned 
+  }: { 
+    icon: string; 
+    name: string; 
+    description: string;
+    earned: boolean;
+  }) {
+    return (
+      <div className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${
+        earned 
+          ? "bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-400/30" 
+          : "bg-white/5 border border-white/10 opacity-50"
+      }`}>
+        <span className={`text-3xl ${earned ? "animate-bounce" : "grayscale"}`}>{icon}</span>
+        <div className="text-left">
+          <p className={`font-bold ${earned ? "text-yellow-300" : "text-gray-400"}`}>{name}</p>
+          <p className={`text-sm ${earned ? "text-yellow-200/70" : "text-gray-500"}`}>{description}</p>
+        </div>
+        {earned && <span className="ml-auto text-yellow-400">✓</span>}
+      </div>
+    );
+  }
+
+  // Celebration Confetti Component
+  function Confetti() {
+    const confettiColors = ["#FFD700", "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#98D8C8"];
+    
+    return (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {Array.from({ length: 50 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute animate-confetti"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `-${Math.random() * 20 + 10}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              animationDuration: `${Math.random() * 2 + 2}s`,
+            }}
+          >
+            <div 
+              className="w-3 h-3 rotate-45"
+              style={{ 
+                backgroundColor: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+                transform: `rotate(${Math.random() * 360}deg)`
+              }}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Enhanced Ending Screen
+  if (showEnding && gameState) {
     const endingIndex = Math.min(Math.floor(gameState.totalStepsUsed / 200), genreContent[gameState.genre].endings.length - 1);
     const archetypeIndex = Math.min(Math.floor(gameState.totalStepsUsed / 300), genreContent[gameState.genre].archetypes.length - 1);
     const accuracy = gameState.correctCount + gameState.closeCount + gameState.wrongCount > 0
       ? Math.round((gameState.correctCount / (gameState.correctCount + gameState.closeCount + gameState.wrongCount)) * 100)
       : 0;
     const accuracyRating = accuracy >= 80 ? "Elite Estimator" : accuracy >= 60 ? "Solid Guesser" : accuracy >= 40 ? "Learning Warrior" : "Survivor";
-
+    
+    // Calculate time taken
+    const timeTaken = gameState.startTime ? Math.round((Date.now() - gameState.startTime) / 1000) : 0;
+    const minutes = Math.floor(timeTaken / 60);
+    const seconds = timeTaken % 60;
+    const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+    
+    // Calculate average steps per round
+    const avgStepsPerRound = gameState.round > 0 
+      ? Math.round(gameState.totalStepsUsed / gameState.round) 
+      : 0;
+    
+    // Determine achievements
+    const achievements = [
+      { 
+        icon: "🏆", 
+        name: "First Victory", 
+        description: "Complete your first KiloQuest", 
+        earned: true 
+      },
+      { 
+        icon: "🎯", 
+        name: "Sharpshooter", 
+        description: "80%+ accuracy", 
+        earned: accuracy >= 80 
+      },
+      { 
+        icon: "⚡", 
+        name: "Speed Demon", 
+        description: "Complete in under 2 minutes", 
+        earned: timeTaken < 120 
+      },
+      { 
+        icon: "💎", 
+        name: "Efficiency Expert", 
+        description: "Avg < 30 steps per round", 
+        earned: avgStepsPerRound < 30 
+      },
+      { 
+        icon: "🔥", 
+        name: "On Fire", 
+        description: "5+ correct answers", 
+        earned: gameState.correctCount >= 5 
+      },
+      { 
+        icon: "🎖️", 
+        name: "Veteran", 
+        description: "Reach round 10+", 
+        earned: gameState.round >= 10 
+      },
+    ];
+    
+    const earnedAchievements = achievements.filter(a => a.earned).length;
+    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 overflow-hidden">
-        {/* Celebration particles */}
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 overflow-hidden relative">
+        {/* Celebration confetti */}
+        <Confetti />
+        
+        {/* Animated background orbs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-4 h-4 bg-yellow-400 rounded-full animate-bounce" />
-          <div className="absolute top-1/3 right-1/4 w-3 h-3 bg-pink-400 rounded-full animate-bounce delay-300" />
-          <div className="absolute bottom-1/4 left-1/3 w-5 h-5 bg-purple-400 rounded-full animate-bounce delay-500" />
-          <div className="absolute top-1/2 right-1/3 w-4 h-4 bg-purple-400 rounded-full animate-bounce delay-700" />
-          <div className="absolute bottom-1/3 right-1/4 w-3 h-3 bg-pink-400 rounded-full animate-bounce delay-1000" />
+          <div className="absolute top-10 left-10 w-72 h-72 bg-yellow-500/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-500" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-yellow-500/5 to-pink-500/5 rounded-full blur-3xl animate-pulse" />
         </div>
 
-        <div className="max-w-2xl w-full relative z-10">
-          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 text-center shadow-2xl">
-            <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-full border border-purple-400/40 mb-6">
-              <span className="text-2xl">🏆</span>
-              <span className="text-white font-bold tracking-wider">KILO-JOURNEY COMPLETE</span>
-              <span className="text-2xl">🏆</span>
+        <div className="max-w-4xl w-full relative z-10">
+          {/* Main Results Card */}
+          <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl mb-6">
+            {/* Header Badge */}
+            <div className="flex justify-center mb-6">
+              <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 rounded-full border border-yellow-400/40 animate-pulse">
+                <span className="text-2xl">🏆</span>
+                <span className="text-white font-bold tracking-wider">KILO-JOURNEY COMPLETE</span>
+                <span className="text-2xl">🏆</span>
+              </div>
             </div>
 
-            <h1 className="text-5xl md:text-6xl font-black text-white mb-4 animate-pulse bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
-              {gameState.genre.toUpperCase()}
-            </h1>
-            <p className="text-xl text-purple-200 mb-8">
-              {genreContent[gameState.genre].endings[endingIndex]}
-            </p>
+            {/* Genre & Round */}
+            <div className="text-center mb-6">
+              <h1 className="text-4xl md:text-5xl font-black text-white mb-2 bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                {gameState.genre.toUpperCase()} QUEST
+              </h1>
+              <div className="inline-flex items-center gap-4 px-6 py-2 bg-white/10 rounded-full border border-white/20">
+                <span className="text-purple-300">Rounds Survived:</span>
+                <span className="text-3xl font-black text-white">#{gameState.round}</span>
+              </div>
+            </div>
 
-            {/* Main Stats Display */}
-            <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl p-6 mb-6 border border-purple-400/30">
-              <p className="text-purple-200 mb-1">Total Kilo-Steps Used</p>
-              <p className="text-6xl font-black text-white animate-bounce tabular-nums">
-                {gameState.totalStepsUsed.toLocaleString()}
+            {/* Story Ending */}
+            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-2xl p-6 mb-6 border border-purple-400/20">
+              <p className="text-xl text-purple-200 text-center italic">
+                "{genreContent[gameState.genre].endings[endingIndex]}"
               </p>
-              <p className="text-purple-300/60 text-sm mt-2">out of 1,000 starting</p>
             </div>
 
-            {/* Stats Grid */}
+            {/* Main Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gradient-to-br from-purple-500/30 to-pink-500/30 rounded-2xl p-4 border border-purple-400/30 text-center">
+                <p className="text-purple-300 text-xs uppercase tracking-wider mb-1">Kilo-Steps Used</p>
+                <p className="text-3xl md:text-4xl font-black text-white tabular-nums animate-bounce">
+                  {gameState.totalStepsUsed.toLocaleString()}
+                </p>
+                <p className="text-purple-400/60 text-xs mt-1">out of 1,000</p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-green-500/30 to-emerald-500/30 rounded-2xl p-4 border border-green-400/30 text-center">
+                <p className="text-green-300 text-xs uppercase tracking-wider mb-1">Accuracy</p>
+                <p className="text-3xl md:text-4xl font-black text-green-400 tabular-nums">
+                  {accuracy}%
+                </p>
+                <p className="text-green-400/60 text-xs mt-1">{accuracyRating}</p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-blue-500/30 to-cyan-500/30 rounded-2xl p-4 border border-blue-400/30 text-center">
+                <p className="text-blue-300 text-xs uppercase tracking-wider mb-1">Time Taken</p>
+                <p className="text-3xl md:text-4xl font-black text-white tabular-nums">
+                  {timeString}
+                </p>
+                <p className="text-blue-400/60 text-xs mt-1">{gameState.round} rounds</p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-yellow-500/30 to-orange-500/30 rounded-2xl p-4 border border-yellow-400/30 text-center">
+                <p className="text-yellow-300 text-xs uppercase tracking-wider mb-1">Avg Steps/Round</p>
+                <p className="text-3xl md:text-4xl font-black text-white tabular-nums">
+                  {avgStepsPerRound}
+                </p>
+                <p className="text-yellow-400/60 text-xs mt-1">efficiency score</p>
+              </div>
+            </div>
+
+            {/* Performance Stats */}
             <div className="grid grid-cols-3 gap-3 mb-6">
-              <div className="bg-green-500/20 rounded-xl p-4 border border-green-400/30">
+              <div className="bg-green-500/20 rounded-xl p-4 border border-green-400/30 text-center">
                 <p className="text-green-300 text-xs uppercase tracking-wider mb-1">
                   {genreContent[gameState.genre].statsLabels.correct}
                 </p>
                 <p className="text-3xl font-black text-green-400 tabular-nums">{gameState.correctCount}</p>
+                <p className="text-green-400/60 text-xs">-10 steps each</p>
               </div>
-              <div className="bg-yellow-500/20 rounded-xl p-4 border border-yellow-400/30">
+              <div className="bg-yellow-500/20 rounded-xl p-4 border border-yellow-400/30 text-center">
                 <p className="text-yellow-300 text-xs uppercase tracking-wider mb-1">
                   {genreContent[gameState.genre].statsLabels.close}
                 </p>
                 <p className="text-3xl font-black text-yellow-400 tabular-nums">{gameState.closeCount}</p>
+                <p className="text-yellow-400/60 text-xs">-25 steps each</p>
               </div>
-              <div className="bg-red-500/20 rounded-xl p-4 border border-red-400/30">
+              <div className="bg-red-500/20 rounded-xl p-4 border border-red-400/30 text-center">
                 <p className="text-red-300 text-xs uppercase tracking-wider mb-1">
                   {genreContent[gameState.genre].statsLabels.wrong}
                 </p>
                 <p className="text-3xl font-black text-red-400 tabular-nums">{gameState.wrongCount}</p>
+                <p className="text-red-400/60 text-xs">-50 steps each</p>
               </div>
             </div>
 
-            {/* Accuracy Badge */}
-            <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 rounded-full border border-white/20 mb-6">
-              <span className="text-purple-300">Accuracy:</span>
-              <span className="text-2xl font-black text-white tabular-nums">{accuracy}%</span>
-              <span className="text-yellow-400">★</span>
-              <span className="text-purple-200 font-bold">{accuracyRating}</span>
-            </div>
-
             {/* Kilo-Title */}
-            <div className="mb-6">
-              <p className="text-purple-300 text-sm uppercase tracking-wider mb-2">Your Kilo-Title</p>
-              <p className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 animate-pulse">
+            <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-2xl p-6 mb-6 border border-yellow-400/30 text-center">
+              <p className="text-yellow-300 text-sm uppercase tracking-wider mb-2">Your Kilo-Title Unlocked</p>
+              <p className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 animate-pulse">
                 {genreContent[gameState.genre].archetypes[archetypeIndex].name}
               </p>
-              <p className="text-lg text-yellow-300/80 font-medium mb-2">
-                {genreContent[gameState.genre].archetypes[archetypeIndex].tagline}
+              <p className="text-xl text-yellow-300/80 font-medium mb-2">
+                "{genreContent[gameState.genre].archetypes[archetypeIndex].tagline}"
               </p>
-              <p className="text-purple-300/70 text-sm max-w-md mx-auto">
+              <p className="text-yellow-200/70 text-sm max-w-lg mx-auto">
                 {genreContent[gameState.genre].archetypes[archetypeIndex].description}
               </p>
             </div>
 
-            {/* Final Message */}
-            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl p-4 mb-6 border border-white/10">
+            {/* Achievements */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-purple-300 text-sm uppercase tracking-wider">Achievements</p>
+                <p className="text-yellow-400 font-bold">{earnedAchievements}/{achievements.length}</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {achievements.map((achievement, index) => (
+                  <AchievementBadge key={index} {...achievement} />
+                ))}
+              </div>
+            </div>
+
+            {/* Social Sharing */}
+            <div className="mb-6">
+              <p className="text-purple-300 text-sm uppercase tracking-wider mb-3 text-center">Share Your Achievement</p>
+              <ShareButtons 
+                stats={{
+                  steps: gameState.totalStepsUsed,
+                  rounds: gameState.round,
+                  correct: gameState.correctCount,
+                  close: gameState.closeCount,
+                  wrong: gameState.wrongCount
+                }}
+                genre={gameState.genre}
+                accuracy={accuracy}
+                title={genreContent[gameState.genre].archetypes[archetypeIndex].name}
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap justify-center gap-4">
+              <button
+                onClick={() => startGame(gameState.genre)}
+                className="py-4 px-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xl rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95 flex items-center gap-2"
+              >
+                <span>🔄</span> Play Again
+              </button>
+              <button
+                onClick={restartGame}
+                className="py-4 px-8 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-xl rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95 flex items-center gap-2"
+              >
+                <span>🎮</span> New Genre
+              </button>
+            </div>
+          </div>
+
+          {/* Footer Message */}
+          <div className="text-center">
+            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl p-4 mb-4 border border-white/10">
               <p className="text-purple-200 italic text-lg">
                 {genreContent[gameState.genre].finalMessage}
               </p>
             </div>
-
-            <button
-              onClick={restartGame}
-              className="py-4 px-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xl rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95"
-            >
-              🔄 New Kilo-Quest
-            </button>
+            <p className="text-purple-400/60 text-sm flex items-center justify-center gap-2">
+              <span>🌟</span>
+              <span>Can you earn all achievements? Try different genres!</span>
+              <span>🌟</span>
+            </p>
           </div>
         </div>
+
+        {/* Global styles for confetti animation */}
+        <style jsx global>{`
+          @keyframes confetti {
+            0% {
+              transform: translateY(0) rotate(0deg);
+              opacity: 1;
+            }
+            100% {
+              transform: translateY(100vh) rotate(720deg);
+              opacity: 0;
+            }
+          }
+          .animate-confetti {
+            animation: confetti 3s ease-out forwards;
+          }
+        `}</style>
       </div>
     );
   }
