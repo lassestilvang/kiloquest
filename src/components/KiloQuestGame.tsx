@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 
 export type Genre = "fantasy" | "scifi" | "mystery" | "apocalyptic";
+
+export type QuestionCategory = "scale" | "conceptual" | "kilo_feature";
 
 export interface GameState {
   steps: number;
@@ -188,8 +190,7 @@ const genreContent: Record<
   },
 };
 
-// Question categories for variety
-type QuestionCategory = "scale" | "conceptual" | "kilo_feature";
+
 
 // Kilo feature questions - at least 1 in every 3 should be a Kilo feature question
 const KILO_FEATURE_QUESTIONS: Challenge[] = [
@@ -585,8 +586,26 @@ const generateChallengeOrder = (): number[] => {
   return shuffleArray([1, 2, 3, 4, 5]);
 };
 
-// Keep track of Kilo feature question usage
-let kiloFeatureRoundTracker = 0;
+// Step deduction constants for better maintainability
+const STEP_DEDUCTION = {
+  correct: 100,
+  close: 250,
+  wrong: 500,
+} as const;
+
+// Maximum steps at game start
+const MAX_STEPS = 1000;
+
+// Rounds per game (1-5 challenge order)
+const TOTAL_ROUNDS = 5;
+
+// Use a ref to track Kilo feature question usage (persists across calls but can be reset)
+const kiloFeatureRoundTracker = { current: 0 };
+
+// Reset function to clear tracker between games
+const resetKiloFeatureTracker = () => {
+  kiloFeatureRoundTracker.current = 0;
+};
 
 // Generate a challenge for a given round with proper Kilo feature distribution
 const generateChallenge = (
@@ -601,15 +620,15 @@ const generateChallenge = (
 
   if (
     shouldBeKiloFeature &&
-    kiloFeatureRoundTracker < KILO_FEATURE_QUESTIONS.length
+    kiloFeatureRoundTracker.current < KILO_FEATURE_QUESTIONS.length
   ) {
     // Return a Kilo feature question
     challenge = {
       ...KILO_FEATURE_QUESTIONS[
-        kiloFeatureRoundTracker % KILO_FEATURE_QUESTIONS.length
+        kiloFeatureRoundTracker.current % KILO_FEATURE_QUESTIONS.length
       ],
     };
-    kiloFeatureRoundTracker++;
+    kiloFeatureRoundTracker.current++;
 
     // Adapt story to genre
     const genreStories: Record<Genre, string> = {
@@ -644,11 +663,8 @@ const generateChallenge = (
   return challenge;
 };
 
-const stepsDeduction = {
-  correct: 100,
-  close: 250,
-  wrong: 500,
-};
+// Use the constants defined above
+const stepsDeduction = STEP_DEDUCTION;
 
 // Animated steps display component
 function AnimatedSteps({
@@ -659,7 +675,7 @@ function AnimatedSteps({
   steps: number;
   previousSteps: number;
   isLow: boolean;
-}) {
+}): React.ReactElement {
   const [displaySteps, setDisplaySteps] = useState(steps);
 
   useEffect(() => {
@@ -701,7 +717,7 @@ function AnimatedSteps({
 }
 
 // Kilo indicator component
-function KiloIndicator({ steps }: { steps: number }) {
+function KiloIndicator({ steps }: { steps: number }): React.ReactElement {
   const kiloPercent = Math.round((steps / 1000) * 100);
 
   return (
@@ -727,11 +743,11 @@ function KiloIndicator({ steps }: { steps: number }) {
 // Progress bar component
 function StepsProgressBar({
   steps,
-  maxSteps = 1000,
+  maxSteps = MAX_STEPS,
 }: {
   steps: number;
   maxSteps?: number;
-}) {
+}): React.ReactElement {
   const percentage = Math.max(0, (steps / maxSteps) * 100);
 
   return (
@@ -768,10 +784,13 @@ export default function KiloQuestGame() {
   const [showShareCard, setShowShareCard] = useState(false);
 
   const startGame = useCallback((genre: Genre) => {
+    // Reset Kilo feature tracker for new game
+    resetKiloFeatureTracker();
+    
     const challengeOrder = generateChallengeOrder();
     setSelectedGenre(genre);
     setGameState({
-      steps: 1000,
+      steps: MAX_STEPS,
       round: 1,
       genre,
       totalStepsUsed: 0,
@@ -784,7 +803,7 @@ export default function KiloQuestGame() {
     setCurrentChallenge(generateChallenge(genre, 1, challengeOrder));
     setResolution(null);
     setShowEnding(false);
-    setPreviousSteps(1000);
+    setPreviousSteps(MAX_STEPS);
     setIsAnswering(false);
     setCopied(false);
     setShowShareCard(false);
@@ -858,12 +877,15 @@ export default function KiloQuestGame() {
   }, [gameState, selectedGenre]);
 
   const restartGame = useCallback(() => {
+    // Reset Kilo feature tracker when restarting
+    resetKiloFeatureTracker();
+    
     setGameState(null);
     setCurrentChallenge(null);
     setResolution(null);
     setSelectedGenre(null);
     setShowEnding(false);
-    setPreviousSteps(1000);
+    setPreviousSteps(MAX_STEPS);
     setIsAnswering(false);
     setCopied(false);
     setShowShareCard(false);
@@ -985,7 +1007,7 @@ export default function KiloQuestGame() {
     genre: string;
     accuracy: number;
     title: string;
-  }) {
+  }): React.ReactElement {
     const shareText = `🎮 Just completed KiloQuest ${genre} with ${stats.rounds} rounds, ${accuracy}% accuracy, and earned the "${title}" title! Can you beat my score? #KiloQuest #KiloGuess`;
     const shareUrl = "https://kiloquest.demo";
 
@@ -1008,6 +1030,23 @@ export default function KiloQuestGame() {
         setTimeout(() => setCopied(false), 2000);
       } catch (err) {
         console.error("Failed to copy:", err);
+        // Fallback for environments without clipboard API
+        const textarea = document.createElement('textarea');
+        textarea.value = `${shareText}\n${shareUrl}`;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch {
+          // If all methods fail, show an alert (last resort)
+          alert('Failed to copy. Please copy the text manually.');
+        } finally {
+          document.body.removeChild(textarea);
+        }
       }
     };
 
@@ -1084,7 +1123,7 @@ export default function KiloQuestGame() {
     name: string;
     description: string;
     earned: boolean;
-  }) {
+  }): React.ReactElement {
     return (
       <div
         className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${
@@ -1118,7 +1157,7 @@ export default function KiloQuestGame() {
   }
 
   // Celebration Confetti Component
-  function Confetti() {
+  function Confetti(): React.ReactElement {
     const confettiColors = [
       "#FACC15",
       "#FFD700",
@@ -1128,27 +1167,39 @@ export default function KiloQuestGame() {
       "#FFFAF0",
     ];
 
+    // Use useMemo to avoid recalculating on every render
+    const confettiParticles = React.useMemo(() => {
+      return Array.from({ length: 50 }).map((_, i) => ({
+        id: i,
+        left: `${Math.random() * 100}%`,
+        top: `-${Math.random() * 20 + 10}%`,
+        animationDelay: `${Math.random() * 3}s`,
+        animationDuration: `${Math.random() * 2 + 2}s`,
+        color: confettiColors[
+          Math.floor(Math.random() * confettiColors.length)
+        ],
+        rotation: Math.random() * 360,
+      }));
+    }, []);
+
     return (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {Array.from({ length: 50 }).map((_, i) => (
+        {confettiParticles.map((particle) => (
           <div
-            key={i}
+            key={particle.id}
             className="absolute animate-confetti"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `-${Math.random() * 20 + 10}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${Math.random() * 2 + 2}s`,
+              left: particle.left,
+              top: particle.top,
+              animationDelay: particle.animationDelay,
+              animationDuration: particle.animationDuration,
             }}
           >
             <div
               className="w-3 h-3 rotate-45"
               style={{
-                backgroundColor:
-                  confettiColors[
-                    Math.floor(Math.random() * confettiColors.length)
-                  ],
-                transform: `rotate(${Math.random() * 360}deg)`,
+                backgroundColor: particle.color,
+                transform: `rotate(${particle.rotation}deg)`,
               }}
             />
           </div>
@@ -1284,7 +1335,7 @@ export default function KiloQuestGame() {
             {/* Story Ending */}
             <div className="bg-[#363636] rounded-2xl p-6 mb-6 border border-[#404040]">
               <p className="text-xl text-gray-300 text-center italic">
-                "{genreContent[gameState.genre].endings[endingIndex]}"
+                &quot;{genreContent[gameState.genre].endings[endingIndex]}&quot;
               </p>
             </div>
 
@@ -1377,12 +1428,12 @@ export default function KiloQuestGame() {
                 {genreContent[gameState.genre].archetypes[archetypeIndex].name}
               </p>
               <p className="text-xl text-yellow-300/80 font-medium mb-2">
-                "
+                &quot;
                 {
                   genreContent[gameState.genre].archetypes[archetypeIndex]
                     .tagline
                 }
-                "
+                &quot;
               </p>
               <p className="text-yellow-200/70 text-sm max-w-lg mx-auto">
                 {
