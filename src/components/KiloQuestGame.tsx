@@ -43,9 +43,9 @@ const genreContent: Record<Genre, {
       "The cavern's final test revealed your true nature. You chose wisdom over greed, and the Crystal Caverns themselves bowed to your virtue. You become the Guardian of the Deep, keeper of ancient secrets."
     ],
     archetypes: [
-      { name: "The Clever Strategist", description: "You solved challenges with wisdom rather than brute force." },
-      { name: "The Bold Guesser", description: "You trusted your instincts and took calculated risks." },
-      { name: "The Patient Sage", description: "You approached each challenge with careful deliberation." }
+      { name: "The Kilo Sage", description: "Your wisdom spans a thousand trials." },
+      { name: "The Bold Kilo-Explorer", description: "You ventured into the unknown with confidence." },
+      { name: "The Patient Kilo-Master", description: "You measured every step with care." }
     ]
   },
   scifi: {
@@ -56,9 +56,9 @@ const genreContent: Record<Genre, {
       "Your careful approach revealed the artifact to be a message from an ancient civilization. You become the first human to make contact with alien wisdom, thanks to your measured exploration."
     ],
     archetypes: [
-      { name: "The Intuitive Pilot", description: "You trusted your cosmic instincts to navigate the unknown." },
-      { name: "The Precise Navigator", description: "Your calculations were always remarkably accurate." },
-      { name: "The Cautious Explorer", description: "You balanced curiosity with survival wisdom." }
+      { name: "The Kilo-Pilot", description: "You navigated the cosmos with kilo-precision." },
+      { name: "The Kilo-Navigator", description: "Your calculations were always on point." },
+      { name: "The Kilo-Explorer", description: "You charted new territories with wisdom." }
     ]
   },
   mystery: {
@@ -69,9 +69,9 @@ const genreContent: Record<Genre, {
       "The case solved, you reflect that the truth was stranger than fiction. Your reputation as the sharpest detective in the city is now secured, and criminals everywhere sleep less easily."
     ],
     archetypes: [
-      { name: "The Master Deducer", description: "Your logic cut through lies like a knife through silk." },
-      { name: "The Quick Thinker", description: "You worked fast when every second mattered." },
-      { name: "The Thorough Investigator", description: "You left no stone unturned in your pursuit of truth." }
+      { name: "The Kilo-Deducer", description: "Your logic cut through lies like a blade." },
+      { name: "The Kilo-Detective", description: "You solved a thousand clues to find the truth." },
+      { name: "The Kilo-Investigator", description: "No mystery could withstand your scrutiny." }
     ]
   },
   apocalyptic: {
@@ -82,9 +82,9 @@ const genreContent: Record<Genre, {
       "Your careful calculations revealed that the bunker has a hidden second level with preserved supplies. You didn't just survive—you thrived, thanks to your numerical intuition."
     ],
     archetypes: [
-      { name: "The Resourceful Survivor", description: "You made every resource count in the harsh new world." },
-      { name: "The Calculated Risk-Taker", description: "You knew when to push forward and when to hold back." },
-      { name: "The Pragmatic Optimist", description: "You found hope in numbers and survival in wisdom." }
+      { name: "The Kilo-Survivor", description: "You mastered survival with a thousand tricks." },
+      { name: "The Kilo-Resourceful", description: "Every kilo of your wit was tested." },
+      { name: "The Kilo-Optimist", description: "You found hope in a thousand possibilities." }
     ]
   }
 };
@@ -170,7 +170,7 @@ const generateChallenge = (genre: Genre, round: number): Challenge => {
     const base = challenges[cycleRound];
     return {
       ...base,
-      story: `Round ${round}: Your journey continues. The challenges grow more complex, but your wisdom has grown stronger.`
+      story: `Round ${round}: Your journey continues. The challenges grow more complex, but your kilo-wisdom has grown stronger.`
     };
   }
 
@@ -217,13 +217,37 @@ function AnimatedSteps({
   }, [steps, previousSteps]);
 
   return (
-    <p className={`text-4xl md:text-5xl font-black transition-all duration-300 ${
+    <span className={`text-5xl md:text-6xl font-black tabular-nums tracking-tight ${
       isLow 
         ? "text-red-400 scale-110 animate-pulse" 
         : "text-white"
     }`}>
       {displaySteps.toLocaleString()}
-    </p>
+    </span>
+  );
+}
+
+// Kilo indicator component
+function KiloIndicator({ steps }: { steps: number }) {
+  const kiloPercent = Math.round((steps / 1000) * 100);
+  
+  return (
+    <div className="flex items-center gap-2 justify-center">
+      <span className="text-2xl">💯</span>
+      <div className="flex items-center gap-1">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div
+            key={i}
+            className={`w-3 h-8 rounded-sm transition-all duration-300 ${
+              i < kiloPercent / 10
+                ? "bg-gradient-to-t from-purple-400 to-pink-400 shadow-lg shadow-purple-500/50"
+                : "bg-white/20"
+            }`}
+          />
+        ))}
+      </div>
+      <span className="text-2xl">🌟</span>
+    </div>
   );
 }
 
@@ -232,15 +256,19 @@ function StepsProgressBar({ steps, maxSteps = 1000 }: { steps: number; maxSteps?
   const percentage = Math.max(0, (steps / maxSteps) * 100);
   
   return (
-    <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
+    <div className="w-full h-4 bg-white/20 rounded-full overflow-hidden">
       <div 
-        className={`h-full transition-all duration-500 ease-out rounded-full ${
+        className={`h-full transition-all duration-500 ease-out rounded-full relative ${
           percentage > 50 ? "bg-gradient-to-r from-green-400 to-emerald-400" :
           percentage > 25 ? "bg-gradient-to-r from-yellow-400 to-orange-400" :
           "bg-gradient-to-r from-red-400 to-pink-500 animate-pulse"
         }`}
         style={{ width: `${percentage}%` }}
-      />
+      >
+        {percentage > 10 && (
+          <div className="absolute inset-0 bg-white/30 animate-pulse" />
+        )}
+      </div>
     </div>
   );
 }
@@ -335,56 +363,76 @@ export default function KiloQuestGame() {
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-20 right-20 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-full blur-3xl animate-pulse delay-500" />
         </div>
 
         <div className="max-w-2xl w-full relative z-10">
-          <div className="text-center mb-12">
-            <h1 className="text-5xl md:text-7xl font-black text-white mb-4 tracking-tight animate-bounce">
-              KiloQuest
+          <div className="text-center mb-8">
+            {/* Big kilo branding */}
+            <div className="inline-flex items-center gap-3 mb-6 px-6 py-2 bg-white/10 backdrop-blur-lg rounded-full border border-white/20">
+              <span className="text-4xl">☰</span>
+              <span className="text-purple-200 font-mono text-sm tracking-widest">KILO SYSTEM v1.0</span>
+              <span className="text-4xl">⚡</span>
+            </div>
+            
+            <h1 className="text-6xl md:text-8xl font-black text-white mb-4 tracking-tighter">
+              <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent animate-gradient bg-300%">
+                Kilo
+              </span>
+              <span className="text-white">Quest</span>
             </h1>
-            <p className="text-xl md:text-2xl text-purple-200 font-light">
+            <p className="text-2xl md:text-3xl text-purple-200 font-light mb-4">
               KiloGuess Edition
             </p>
-            <p className="mt-6 text-lg text-purple-300/80 italic">
-              &quot;You have 1,000 steps. Knowledge is survival.&quot;
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 rounded-lg border border-purple-400/30">
+              <span className="text-purple-300">STARTING KILO-STEPS:</span>
+              <span className="text-2xl font-black text-white">1,000</span>
+            </div>
+            <p className="mt-6 text-lg text-purple-300/80 italic max-w-lg mx-auto">
+              &quot;You have a thousand steps. Every guess tests your kilo-wisdom.&quot;
             </p>
           </div>
 
           <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 shadow-2xl">
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">
-              Choose Your Genre
-            </h2>
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <span className="text-xl">🎮</span>
+              <h2 className="text-xl font-bold text-white">Select Your Quest Genre</h2>
+              <span className="text-xl">🎮</span>
+            </div>
 
             <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mb-8">
               {[
                 { id: "fantasy", emoji: "🐉", name: "Fantasy", color: "from-yellow-500 to-orange-500" },
                 { id: "scifi", emoji: "🚀", name: "Sci-Fi", color: "from-blue-500 to-cyan-500" },
                 { id: "mystery", emoji: "🔍", name: "Mystery", color: "from-purple-500 to-pink-500" },
-                { id: "apocalyptic", emoji: "☢️", name: "Post-Apocalyptic", color: "from-red-500 to-orange-600" }
+                { id: "apocalyptic", emoji: "☢️", name: "Post-Apoc", color: "from-red-500 to-orange-600" }
               ].map((genre) => (
                 <button
                   key={genre.id}
                   onClick={() => startGame(genre.id as Genre)}
-                  className={`p-6 rounded-2xl bg-gradient-to-br ${genre.color} hover:scale-105 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 shadow-lg group`}
+                  className={`p-6 rounded-2xl bg-gradient-to-br ${genre.color} hover:scale-105 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 shadow-lg group relative overflow-hidden`}
                 >
-                  <span className="text-4xl block mb-2 group-hover:scale-125 transition-transform duration-300">
+                  <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                  <span className="text-5xl block mb-2 group-hover:scale-125 transition-transform duration-300 relative z-10">
                     {genre.emoji}
                   </span>
-                  <span className="text-white font-bold text-lg">{genre.name}</span>
+                  <span className="text-white font-bold text-lg relative z-10">{genre.name}</span>
                 </button>
               ))}
             </div>
 
             <button
               onClick={() => startGame("fantasy")}
-              className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xl rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95"
+              className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xl rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95 relative overflow-hidden group"
             >
-              Start Adventure
+              <div className="absolute inset-0 bg-white/20 translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
+              <span className="relative z-10">⚡ Begin Your Kilo-Journey</span>
             </button>
           </div>
 
-          <p className="text-center text-purple-400/60 mt-8 text-sm">
-            Test your estimation skills to survive the journey!
+          <p className="text-center text-purple-400/60 mt-8 text-sm flex items-center justify-center gap-2">
+            <span>🧠</span>
+            <span>Test your kilo-wisdom. Survive the estimate.</span>
           </p>
         </div>
       </div>
@@ -403,12 +451,19 @@ export default function KiloQuestGame() {
           <div className="absolute top-1/4 left-1/4 w-4 h-4 bg-yellow-400 rounded-full animate-bounce" />
           <div className="absolute top-1/3 right-1/4 w-3 h-3 bg-pink-400 rounded-full animate-bounce delay-300" />
           <div className="absolute bottom-1/4 left-1/3 w-5 h-5 bg-purple-400 rounded-full animate-bounce delay-500" />
+          <div className="absolute top-1/2 right-1/3 w-4 h-4 bg-purple-400 rounded-full animate-bounce delay-700" />
         </div>
 
         <div className="max-w-2xl w-full relative z-10">
           <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 text-center shadow-2xl">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 rounded-full border border-purple-400/30 mb-6">
+              <span className="text-xl">🏆</span>
+              <span className="text-purple-200 font-bold">KILO-JOURNEY COMPLETE</span>
+              <span className="text-xl">🏆</span>
+            </div>
+
             <h1 className="text-4xl md:text-5xl font-black text-white mb-6 animate-pulse">
-              Adventure Complete
+              Quest Finished
             </h1>
 
             <div className="mb-8">
@@ -417,15 +472,16 @@ export default function KiloQuestGame() {
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl p-6 mb-8 transform hover:scale-105 transition-transform duration-300">
-              <p className="text-purple-200 mb-2">You survived</p>
-              <p className="text-6xl font-black text-white animate-bounce">
-                {gameState.totalStepsUsed} steps
+            <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl p-6 mb-8 transform hover:scale-105 transition-transform duration-300 border border-purple-400/30">
+              <p className="text-purple-200 mb-2">Total Kilo-Steps Used</p>
+              <p className="text-6xl font-black text-white animate-bounce tabular-nums">
+                {gameState.totalStepsUsed.toLocaleString()}
               </p>
+              <p className="text-purple-300/60 text-sm mt-2">out of 1,000 starting</p>
             </div>
 
             <div className="mb-8">
-              <p className="text-purple-200 mb-2">Your Archetype</p>
+              <p className="text-purple-200 mb-2">Your Kilo-Title</p>
               <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 animate-pulse">
                 {genreContent[gameState.genre].archetypes[archetypeIndex].name}
               </p>
@@ -438,7 +494,7 @@ export default function KiloQuestGame() {
               onClick={restartGame}
               className="py-4 px-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xl rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95"
             >
-              Play Again
+              🔄 New Kilo-Quest
             </button>
           </div>
         </div>
@@ -456,21 +512,21 @@ export default function KiloQuestGame() {
             resolution.wasClose ? "bg-yellow-500/20 border-yellow-400" :
             "bg-red-500/20 border-red-400"
           }`}>
-            <div className="text-7xl mb-4 animate-bounce">
-              {resolution.wasCorrect ? "🎉" : resolution.wasClose ? "🤔" : "❌"}
+            <div className="text-8xl mb-4 animate-bounce">
+              {resolution.wasCorrect ? "🎯" : resolution.wasClose ? "🤔" : "❌"}
             </div>
             
-            <h2 className={`text-3xl font-bold mb-2 ${
+            <h2 className={`text-4xl font-bold mb-2 ${
               resolution.wasCorrect ? "text-green-400" :
               resolution.wasClose ? "text-yellow-400" :
               "text-red-400"
             }`}>
-              {resolution.wasCorrect ? "Correct!" : resolution.wasClose ? "Close Enough!" : "Wrong"}
+              {resolution.wasCorrect ? "KILO-CORRECT!" : resolution.wasClose ? "KILO-CLOSE!" : "KILO-MISS"}
             </h2>
 
-            <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-white/10 rounded-full">
-              <span className="text-purple-300">Steps deducted:</span>
-              <span className={`text-2xl font-bold ${
+            <div className="inline-flex items-center gap-3 mb-4 px-6 py-3 bg-white/10 rounded-full border border-white/20">
+              <span className="text-purple-300 font-mono">KILO-STEPS LOST:</span>
+              <span className={`text-3xl font-black tabular-nums ${
                 resolution.wasCorrect ? "text-green-400" :
                 resolution.wasClose ? "text-yellow-400" :
                 "text-red-400"
@@ -483,7 +539,7 @@ export default function KiloQuestGame() {
               <p className="text-purple-200 mb-4">{resolution.explanation}</p>
               <div className="border-t border-white/20 pt-4 mt-4">
                 <p className="text-purple-300 font-semibold mb-1 flex items-center gap-2">
-                  <span className="animate-pulse">💡</span> Fun Fact
+                  <span className="animate-pulse">💡</span> Kilo-Fact
                 </p>
                 <p className="text-purple-300/80">{resolution.funFact}</p>
               </div>
@@ -493,7 +549,7 @@ export default function KiloQuestGame() {
               onClick={continueGame}
               className="py-4 px-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xl rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:scale-95"
             >
-              Continue Adventure
+              ➜ Continue Kilo-Quest
             </button>
           </div>
         </div>
@@ -508,39 +564,57 @@ export default function KiloQuestGame() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-10 right-10 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl animate-pulse" />
         <div className="absolute bottom-10 left-10 w-40 h-40 bg-pink-500/10 rounded-full blur-2xl animate-pulse delay-700" />
+        <div className="absolute top-1/3 left-1/4 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl animate-pulse delay-300" />
       </div>
 
       {/* Header */}
       <div className="max-w-4xl mx-auto mb-4 text-center relative z-10">
-        <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight animate-pulse">
-          KiloQuest
-        </h1>
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-lg rounded-full border border-white/10">
+          <span className="text-lg">☰</span>
+          <span className="font-black text-white tracking-tight">KiloQuest</span>
+          <span className="text-purple-400 text-sm">|</span>
+          <span className="text-purple-300 text-sm font-mono">KILO-GUESS v1.0</span>
+        </div>
       </div>
 
-      {/* Top Bar */}
+      {/* Top Bar - Kilo Dashboard */}
       <div className="max-w-4xl mx-auto mb-4 relative z-10">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-white/20 shadow-xl">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-white/20 shadow-xl">
+          {/* Kilo Progress Visual */}
+          <div className="mb-4">
+            <KiloIndicator steps={gameState.steps} />
+          </div>
+          
           {/* Progress Bar */}
-          <div className="mb-3">
+          <div className="mb-4">
+            <div className="flex justify-between text-xs text-purple-300/60 mb-1">
+              <span>0</span>
+              <span>500</span>
+              <span>1,000</span>
+            </div>
             <StepsProgressBar steps={gameState.steps} />
           </div>
           
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div className="text-center flex-1">
-              <p className="text-purple-300 text-sm uppercase tracking-wider">Steps Left</p>
+              <p className="text-purple-300 text-xs uppercase tracking-wider mb-1">Kilo-Steps Left</p>
               <AnimatedSteps 
                 steps={gameState.steps} 
                 previousSteps={previousSteps}
                 isLow={gameState.steps <= 100}
               />
             </div>
-            <div className="text-center flex-1">
-              <p className="text-purple-300 text-sm uppercase tracking-wider">Round</p>
-              <p className="text-3xl font-bold text-white">{gameState.round}</p>
+            
+            <div className="flex-shrink-0 px-4 py-2 bg-white/10 rounded-xl border border-white/10">
+              <div className="text-center">
+                <p className="text-purple-300 text-xs uppercase tracking-wider">Kilo-Round</p>
+                <p className="text-2xl font-black text-white">#{gameState.round}</p>
+              </div>
             </div>
+            
             <div className="text-center flex-1 hidden md:block">
-              <p className="text-purple-300 text-sm uppercase tracking-wider">Steps Used</p>
-              <p className="text-2xl font-bold text-purple-200">{gameState.totalStepsUsed}</p>
+              <p className="text-purple-300 text-xs uppercase tracking-wider mb-1">Kilo-Steps Spent</p>
+              <p className="text-xl font-bold text-purple-200 tabular-nums">{gameState.totalStepsUsed.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -565,10 +639,13 @@ export default function KiloQuestGame() {
         <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-lg rounded-3xl p-6 md:p-8 border border-purple-400/30 shadow-xl animate-in slide-in-from-right-4 fade-in duration-500">
           <div className="flex items-center gap-3 mb-6">
             <span className="text-3xl animate-pulse">🎯</span>
-            <h2 className="text-2xl font-bold text-white">KiloGuess Challenge</h2>
+            <div>
+              <h2 className="text-2xl font-bold text-white">KiloGuess Challenge</h2>
+              <p className="text-purple-300/60 text-sm">Estimate. Survive. Kilo-on.</p>
+            </div>
           </div>
 
-          <p className="text-xl text-purple-200 mb-6">
+          <p className="text-xl text-purple-200 mb-6 font-medium">
             {currentChallenge?.question}
           </p>
 
@@ -582,7 +659,7 @@ export default function KiloQuestGame() {
                   isAnswering ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
-                <span className="inline-block w-8 h-8 bg-purple-500/30 rounded-lg text-center leading-8 mr-3 font-bold text-purple-200 group-hover:bg-purple-500/50 group-hover:scale-110 transition-all duration-300">
+                <span className="inline-flex items-center justify-center w-10 h-10 bg-purple-500/30 rounded-xl text-center mr-3 font-bold text-purple-200 group-hover:bg-purple-500/50 group-hover:scale-110 transition-all duration-300">
                   {String.fromCharCode(65 + index)}
                 </span>
                 <span className="text-white text-lg">{option}</span>
@@ -590,19 +667,22 @@ export default function KiloQuestGame() {
             ))}
           </div>
 
-          <div className="mt-6 pt-4 border-t border-white/10 flex justify-between text-sm text-purple-300/60">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-              Correct: -10
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse delay-200" />
-              Close: -25
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse delay-500" />
-              Wrong: -50
-            </span>
+          <div className="mt-6 pt-4 border-t border-white/10">
+            <p className="text-center text-sm text-purple-300/60 mb-3">Kilo-Step Deductions</p>
+            <div className="flex justify-center gap-6">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />
+                <span className="text-green-300 text-sm font-medium">Kilo-Correct: -10</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse delay-200" />
+                <span className="text-yellow-300 text-sm font-medium">Kilo-Close: -25</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-red-400 rounded-full animate-pulse delay-500" />
+                <span className="text-red-300 text-sm font-medium">Kilo-Wrong: -50</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
