@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import React from "react";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,15 +16,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "KiloQuest: KiloGuess Edition",
   description: "A browser-based game where knowledge is survival. Test your estimation skills!",
-  other: {
-    preconnect: ["https://fonts.googleapis.com", "https://fonts.gstatic.com"],
-    crossOrigin: "anonymous",
-    link: [
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" },
-    ],
-  },
   icons: {
     icon: "/favicon.ico",
   },

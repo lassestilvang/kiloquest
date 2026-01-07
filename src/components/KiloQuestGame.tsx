@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 
 export type Genre = "fantasy" | "scifi" | "mystery" | "apocalyptic";
 
@@ -301,7 +301,7 @@ const KILO_FEATURE_QUESTIONS: Challenge[] = [
       "Kilo provides an integrated platform with multiple AI-powered tools for the full application development lifecycle.",
     funFact:
       "Kilo's platform combines 5+ major features into one cohesive environment for AI-powered development.",
-    isClose: (i) => false,
+    isClose: () => false,
     category: "kilo_feature",
   },
 ];
@@ -559,19 +559,11 @@ const CONCEPTUAL_QUESTIONS: Challenge[] = [
       "Random data is incompressible—it has no patterns to exploit. This is a fundamental information theory result.",
     funFact:
       "This is why compression works great on documents and images but poorly on already-compressed files!",
-    isClose: (i) => false,
+    isClose: () => false,
     category: "conceptual",
   },
 ];
 
-// Combine all questions
-const ALL_QUESTIONS = [
-  ...SCALE_QUESTIONS,
-  ...CONCEPTUAL_QUESTIONS,
-  ...KILO_FEATURE_QUESTIONS,
-];
-
-// Fisher-Yates shuffle algorithm
 const shuffleArray = <T,>(array: T[]): T[] => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -596,9 +588,6 @@ const STEP_DEDUCTION = {
 // Maximum steps at game start
 const MAX_STEPS = 1000;
 
-// Rounds per game (1-5 challenge order)
-const TOTAL_ROUNDS = 5;
-
 // Use a ref to track Kilo feature question usage (persists across calls but can be reset)
 const kiloFeatureRoundTracker = { current: 0 };
 
@@ -610,8 +599,7 @@ const resetKiloFeatureTracker = () => {
 // Generate a challenge for a given round with proper Kilo feature distribution
 const generateChallenge = (
   genre: Genre,
-  round: number,
-  challengeOrder: number[]
+  round: number
 ): Challenge => {
   // Ensure 1 out of every 3 questions is a Kilo feature question
   const shouldBeKiloFeature = round % 3 === 0;
@@ -781,7 +769,6 @@ export default function KiloQuestGame() {
   const [previousSteps, setPreviousSteps] = useState(1000);
   const [isAnswering, setIsAnswering] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [showShareCard, setShowShareCard] = useState(false);
 
   const startGame = useCallback((genre: Genre) => {
     // Reset Kilo feature tracker for new game
@@ -800,13 +787,12 @@ export default function KiloQuestGame() {
       challengeOrder,
       startTime: Date.now(),
     });
-    setCurrentChallenge(generateChallenge(genre, 1, challengeOrder));
+    setCurrentChallenge(generateChallenge(genre, 1));
     setResolution(null);
     setShowEnding(false);
     setPreviousSteps(MAX_STEPS);
     setIsAnswering(false);
     setCopied(false);
-    setShowShareCard(false);
   }, []);
 
   const handleAnswer = useCallback(
@@ -871,7 +857,7 @@ export default function KiloQuestGame() {
     const nextRound = gameState.round + 1;
     setGameState((prev) => (prev ? { ...prev, round: nextRound } : null));
     setCurrentChallenge(
-      generateChallenge(selectedGenre, nextRound, gameState.challengeOrder)
+      generateChallenge(selectedGenre, nextRound)
     );
     setResolution(null);
   }, [gameState, selectedGenre]);
@@ -888,7 +874,6 @@ export default function KiloQuestGame() {
     setPreviousSteps(MAX_STEPS);
     setIsAnswering(false);
     setCopied(false);
-    setShowShareCard(false);
   }, []);
 
   // Start Screen
@@ -1156,17 +1141,18 @@ export default function KiloQuestGame() {
     );
   }
 
+  // Celebration Confetti colors - defined outside component to avoid recreation
+const CONFETTI_COLORS = [
+  "#FACC15",
+  "#FFD700",
+  "#EAB308",
+  "#FDE047",
+  "#FFF8DC",
+  "#FFFAF0",
+];
+
   // Celebration Confetti Component
   function Confetti(): React.ReactElement {
-    const confettiColors = [
-      "#FACC15",
-      "#FFD700",
-      "#EAB308",
-      "#FDE047",
-      "#FFF8DC",
-      "#FFFAF0",
-    ];
-
     // Use useMemo to avoid recalculating on every render
     const confettiParticles = React.useMemo(() => {
       return Array.from({ length: 50 }).map((_, i) => ({
@@ -1175,8 +1161,8 @@ export default function KiloQuestGame() {
         top: `-${Math.random() * 20 + 10}%`,
         animationDelay: `${Math.random() * 3}s`,
         animationDuration: `${Math.random() * 2 + 2}s`,
-        color: confettiColors[
-          Math.floor(Math.random() * confettiColors.length)
+        color: CONFETTI_COLORS[
+          Math.floor(Math.random() * CONFETTI_COLORS.length)
         ],
         rotation: Math.random() * 360,
       }));
@@ -1335,7 +1321,7 @@ export default function KiloQuestGame() {
             {/* Story Ending */}
             <div className="bg-[#363636] rounded-2xl p-6 mb-6 border border-[#404040]">
               <p className="text-xl text-gray-300 text-center italic">
-                &quot;{genreContent[gameState.genre].endings[endingIndex]}&quot;
+                {'"'}{genreContent[gameState.genre].endings[endingIndex]}{'"'}
               </p>
             </div>
 
@@ -1428,12 +1414,12 @@ export default function KiloQuestGame() {
                 {genreContent[gameState.genre].archetypes[archetypeIndex].name}
               </p>
               <p className="text-xl text-yellow-300/80 font-medium mb-2">
-                &quot;
+                {'"'}
                 {
                   genreContent[gameState.genre].archetypes[archetypeIndex]
                     .tagline
                 }
-                &quot;
+                {'"'}
               </p>
               <p className="text-yellow-200/70 text-sm max-w-lg mx-auto">
                 {
