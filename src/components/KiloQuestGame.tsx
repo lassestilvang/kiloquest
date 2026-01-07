@@ -9,6 +9,9 @@ export interface GameState {
   round: number;
   genre: Genre;
   totalStepsUsed: number;
+  correctCount: number;
+  closeCount: number;
+  wrongCount: number;
 }
 
 export interface Challenge {
@@ -33,7 +36,9 @@ export interface Resolution {
 const genreContent: Record<Genre, {
   openingStory: string;
   endings: string[];
-  archetypes: { name: string; description: string }[];
+  statsLabels: { correct: string; close: string; wrong: string };
+  archetypes: { name: string; tagline: string; description: string }[];
+  finalMessage: string;
 }> = {
   fantasy: {
     openingStory: "You stand at the entrance of the ancient Crystal Caverns, where legends speak of the Heart of Eternity—a gem said to grant wishes beyond mortal comprehension. The cave glows with an ethereal blue light, and you can hear distant whispers of ancient magic. Your quest has only just begun, brave adventurer. But beware: the cavern tests not just your strength, but your wisdom.",
@@ -42,11 +47,13 @@ const genreContent: Record<Genre, {
       "Though you did not claim the Heart of Eternity, the ancient mages of the cavern recognized your wit and granted you a fraction of its power. You return to your village as a learned sorcerer, ready to protect your people with newfound magic.",
       "The cavern's final test revealed your true nature. You chose wisdom over greed, and the Crystal Caverns themselves bowed to your virtue. You become the Guardian of the Deep, keeper of ancient secrets."
     ],
+    statsLabels: { correct: "Spells Mastered", close: "Illusions Seen", wrong: "Traps Triggered" },
     archetypes: [
-      { name: "The Kilo Sage", description: "Your wisdom spans a thousand trials." },
-      { name: "The Bold Kilo-Explorer", description: "You ventured into the unknown with confidence." },
-      { name: "The Patient Kilo-Master", description: "You measured every step with care." }
-    ]
+      { name: "The Kilo Archmage", tagline: "A thousand truths revealed", description: "Your estimation magic is unmatched. You calculated your way through every puzzle the Crystal Caverns threw at you." },
+      { name: "The Kilo Trickster", tagline: "A thousand paths traversed", description: "Quick wits and quicker guesses. You navigated the cavern's tricks with cunning and courage." },
+      { name: "The Kilo Apprentice", tagline: "A thousand lessons learned", description: "Every wrong turn taught you something. Your journey has only just begun, but your potential is limitless." }
+    ],
+    finalMessage: "May your estimates always be true, hero."
   },
   scifi: {
     openingStory: "You're the pilot of the Starship Odyssey, drifting near the mysterious Nebula X-7. Your ship's AI has detected an alien artifact emitting impossible energy signatures. The Federation sent you here because you're their best—and your ship's systems need recalibration using estimation skills that could determine whether you can safely approach the anomaly.",
@@ -55,11 +62,13 @@ const genreContent: Record<Genre, {
       "The artifact's data downloaded to your ship's computer, but you chose not to approach dangerously. The Federation commends your prudent judgment—you've provided invaluable data while keeping your crew safe.",
       "Your careful approach revealed the artifact to be a message from an ancient civilization. You become the first human to make contact with alien wisdom, thanks to your measured exploration."
     ],
+    statsLabels: { correct: "Calculations Perfect", close: "Readings Verified", wrong: "Anomalies Detected" },
     archetypes: [
-      { name: "The Kilo-Pilot", description: "You navigated the cosmos with kilo-precision." },
-      { name: "The Kilo-Navigator", description: "Your calculations were always on point." },
-      { name: "The Kilo-Explorer", description: "You charted new territories with wisdom." }
-    ]
+      { name: "The Kilo Navigator", tagline: "A thousand light-years bridged", description: "Your precision in the void is legendary. Every measurement, every calculation brought you closer to the stars." },
+      { name: "The Kilo Pioneer", tagline: "A thousand frontiers crossed", description: "Bold decisions and brave estimations. You charted unknown territories with nothing but your wits." },
+      { name: "The Kilo Cadet", tagline: "A thousand simulations run", description: "Your training has paid off. The Academy would be proud of your performance in the field." }
+    ],
+    finalMessage: "Engage hyperdrive, Commander. The universe awaits."
   },
   mystery: {
     openingStory: "Detective, you've been called to Blackwood Manor. Lord Blackwood has been found unconscious in his study, and a peculiar antidote was found in his hand. The toxin was fast-acting, and only someone with keen observational skills can piece together what happened. The clock is ticking—the butler said the antidote only lasts 1,000 seconds before it's too late.",
@@ -68,11 +77,13 @@ const genreContent: Record<Genre, {
       "You identified the culprit in time to save Lord Blackwood, though the case had more twists than expected. The newspapers call you 'The Clockwork Detective' for your ability to work under pressure.",
       "The case solved, you reflect that the truth was stranger than fiction. Your reputation as the sharpest detective in the city is now secured, and criminals everywhere sleep less easily."
     ],
+    statsLabels: { correct: "Cases Cracked", close: "Leads Followed", wrong: "Red Herrings" },
     archetypes: [
-      { name: "The Kilo-Deducer", description: "Your logic cut through lies like a blade." },
-      { name: "The Kilo-Detective", description: "You solved a thousand clues to find the truth." },
-      { name: "The Kilo-Investigator", description: "No mystery could withstand your scrutiny." }
-    ]
+      { name: "The Kilo Mastermind", tagline: "A thousand clues connected", description: "No riddle could withstand your scrutiny. Every piece fell into place under your brilliant deduction." },
+      { name: "The Kilo Sleuth", tagline: "A thousand suspects interviewed", description: "Your instincts are razor-sharp. You cut through deception to find the truth beneath." },
+      { name: "The Kilo Rookie", tagline: "A thousand files reviewed", description: "Every investigation starts somewhere. Your first case showed promise that could become legendary." }
+    ],
+    finalMessage: "The city sleeps safer tonight, Detective."
   },
   apocalyptic: {
     openingStory: "Year 2, Day 476. You've found shelter in an abandoned research bunker. Your Geiger counter shows radiation levels spiking outside. The bunker's filtration system needs calibration—you have 1,000 seconds before the next wave of radiation hits. You need to estimate dosages, distances, and survival probabilities using only your wits and limited supplies.",
@@ -81,11 +92,13 @@ const genreContent: Record<Genre, {
       "Though the filtration system has minor issues, you've learned to adapt. Your reputation as a resourceful survivor spreads across the wasteland, and others seek your guidance.",
       "Your careful calculations revealed that the bunker has a hidden second level with preserved supplies. You didn't just survive—you thrived, thanks to your numerical intuition."
     ],
+    statsLabels: { correct: "Survival Calculated", close: "Risks Assessed", wrong: "Supplies Lost" },
     archetypes: [
-      { name: "The Kilo-Survivor", description: "You mastered survival with a thousand tricks." },
-      { name: "The Kilo-Resourceful", description: "Every kilo of your wit was tested." },
-      { name: "The Kilo-Optimist", description: "You found hope in a thousand possibilities." }
-    ]
+      { name: "The Kilo Survivor", tagline: "A thousand days endured", description: "Every calculation kept you alive. Your analytical mind is the reason you still draw breath in this harsh world." },
+      { name: "The Kilo Scavenger", tagline: "A thousand miles trekked", description: "Resources are scarce, but your estimations ensure nothing goes to waste. You're a legend in the wasteland." },
+      { name: "The Kilo Dreamer", tagline: "A thousand hopes kept alive", description: "Even in darkness, you see possibilities. Your optimism is as valuable as any skill." }
+    ],
+    finalMessage: "The wasteland remembers your name."
   }
 };
 
@@ -111,7 +124,7 @@ const generateChallenge = (genre: Genre, round: number): Challenge => {
       question: "If you stack 1,000 coins (like quarters), how tall would the stack be?",
       options: [
         "About as tall as a coffee mug",
-        "About as tall as a adult person",
+        "About as tall as an adult person",
         "About as tall as a two-story house",
         "About as tall as the Eiffel Tower"
       ],
@@ -288,7 +301,10 @@ export default function KiloQuestGame() {
       steps: 1000,
       round: 1,
       genre,
-      totalStepsUsed: 0
+      totalStepsUsed: 0,
+      correctCount: 0,
+      closeCount: 0,
+      wrongCount: 0
     });
     setCurrentChallenge(generateChallenge(genre, 1));
     setResolution(null);
@@ -317,7 +333,10 @@ export default function KiloQuestGame() {
       setGameState(prev => prev ? ({
         ...prev,
         steps: newSteps,
-        totalStepsUsed: prev.totalStepsUsed + deduction
+        totalStepsUsed: prev.totalStepsUsed + deduction,
+        correctCount: isCorrect ? prev.correctCount + 1 : prev.correctCount,
+        closeCount: isClose ? prev.closeCount + 1 : prev.closeCount,
+        wrongCount: !isCorrect && !isClose ? prev.wrongCount + 1 : prev.wrongCount
       }) : null);
 
       setResolution({
@@ -389,7 +408,7 @@ export default function KiloQuestGame() {
               <span className="text-2xl font-black text-white">1,000</span>
             </div>
             <p className="mt-6 text-lg text-purple-300/80 italic max-w-lg mx-auto">
-              &quot;You have a thousand steps. Every guess tests your kilo-wisdom.&quot;
+              You have a thousand steps. Every guess tests your kilo-wisdom.
             </p>
           </div>
 
@@ -443,6 +462,10 @@ export default function KiloQuestGame() {
   if (showEnding) {
     const endingIndex = Math.min(Math.floor(gameState.totalStepsUsed / 200), genreContent[gameState.genre].endings.length - 1);
     const archetypeIndex = Math.min(Math.floor(gameState.totalStepsUsed / 300), genreContent[gameState.genre].archetypes.length - 1);
+    const accuracy = gameState.correctCount + gameState.closeCount + gameState.wrongCount > 0
+      ? Math.round((gameState.correctCount / (gameState.correctCount + gameState.closeCount + gameState.wrongCount)) * 100)
+      : 0;
+    const accuracyRating = accuracy >= 80 ? "Elite Estimator" : accuracy >= 60 ? "Solid Guesser" : accuracy >= 40 ? "Learning Warrior" : "Survivor";
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 overflow-hidden">
@@ -452,41 +475,81 @@ export default function KiloQuestGame() {
           <div className="absolute top-1/3 right-1/4 w-3 h-3 bg-pink-400 rounded-full animate-bounce delay-300" />
           <div className="absolute bottom-1/4 left-1/3 w-5 h-5 bg-purple-400 rounded-full animate-bounce delay-500" />
           <div className="absolute top-1/2 right-1/3 w-4 h-4 bg-purple-400 rounded-full animate-bounce delay-700" />
+          <div className="absolute bottom-1/3 right-1/4 w-3 h-3 bg-pink-400 rounded-full animate-bounce delay-1000" />
         </div>
 
         <div className="max-w-2xl w-full relative z-10">
           <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 text-center shadow-2xl">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 rounded-full border border-purple-400/30 mb-6">
-              <span className="text-xl">🏆</span>
-              <span className="text-purple-200 font-bold">KILO-JOURNEY COMPLETE</span>
-              <span className="text-xl">🏆</span>
+            <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-full border border-purple-400/40 mb-6">
+              <span className="text-2xl">🏆</span>
+              <span className="text-white font-bold tracking-wider">KILO-JOURNEY COMPLETE</span>
+              <span className="text-2xl">🏆</span>
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-black text-white mb-6 animate-pulse">
-              Quest Finished
+            <h1 className="text-5xl md:text-6xl font-black text-white mb-4 animate-pulse bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+              {gameState.genre.toUpperCase()}
             </h1>
+            <p className="text-xl text-purple-200 mb-8">
+              {genreContent[gameState.genre].endings[endingIndex]}
+            </p>
 
-            <div className="mb-8">
-              <p className="text-purple-200 text-xl mb-4">
-                {genreContent[gameState.genre].endings[endingIndex]}
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl p-6 mb-8 transform hover:scale-105 transition-transform duration-300 border border-purple-400/30">
-              <p className="text-purple-200 mb-2">Total Kilo-Steps Used</p>
+            {/* Main Stats Display */}
+            <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl p-6 mb-6 border border-purple-400/30">
+              <p className="text-purple-200 mb-1">Total Kilo-Steps Used</p>
               <p className="text-6xl font-black text-white animate-bounce tabular-nums">
                 {gameState.totalStepsUsed.toLocaleString()}
               </p>
               <p className="text-purple-300/60 text-sm mt-2">out of 1,000 starting</p>
             </div>
 
-            <div className="mb-8">
-              <p className="text-purple-200 mb-2">Your Kilo-Title</p>
-              <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 animate-pulse">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="bg-green-500/20 rounded-xl p-4 border border-green-400/30">
+                <p className="text-green-300 text-xs uppercase tracking-wider mb-1">
+                  {genreContent[gameState.genre].statsLabels.correct}
+                </p>
+                <p className="text-3xl font-black text-green-400 tabular-nums">{gameState.correctCount}</p>
+              </div>
+              <div className="bg-yellow-500/20 rounded-xl p-4 border border-yellow-400/30">
+                <p className="text-yellow-300 text-xs uppercase tracking-wider mb-1">
+                  {genreContent[gameState.genre].statsLabels.close}
+                </p>
+                <p className="text-3xl font-black text-yellow-400 tabular-nums">{gameState.closeCount}</p>
+              </div>
+              <div className="bg-red-500/20 rounded-xl p-4 border border-red-400/30">
+                <p className="text-red-300 text-xs uppercase tracking-wider mb-1">
+                  {genreContent[gameState.genre].statsLabels.wrong}
+                </p>
+                <p className="text-3xl font-black text-red-400 tabular-nums">{gameState.wrongCount}</p>
+              </div>
+            </div>
+
+            {/* Accuracy Badge */}
+            <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 rounded-full border border-white/20 mb-6">
+              <span className="text-purple-300">Accuracy:</span>
+              <span className="text-2xl font-black text-white tabular-nums">{accuracy}%</span>
+              <span className="text-yellow-400">★</span>
+              <span className="text-purple-200 font-bold">{accuracyRating}</span>
+            </div>
+
+            {/* Kilo-Title */}
+            <div className="mb-6">
+              <p className="text-purple-300 text-sm uppercase tracking-wider mb-2">Your Kilo-Title</p>
+              <p className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 animate-pulse">
                 {genreContent[gameState.genre].archetypes[archetypeIndex].name}
               </p>
-              <p className="text-purple-300/70 mt-2">
+              <p className="text-lg text-yellow-300/80 font-medium mb-2">
+                {genreContent[gameState.genre].archetypes[archetypeIndex].tagline}
+              </p>
+              <p className="text-purple-300/70 text-sm max-w-md mx-auto">
                 {genreContent[gameState.genre].archetypes[archetypeIndex].description}
+              </p>
+            </div>
+
+            {/* Final Message */}
+            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl p-4 mb-6 border border-white/10">
+              <p className="text-purple-200 italic text-lg">
+                {genreContent[gameState.genre].finalMessage}
               </p>
             </div>
 
