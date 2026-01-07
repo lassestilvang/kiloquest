@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Next.js Template",
-  description: "A minimal Next.js starter template",
+  title: "KiloQuest: KiloGuess Edition",
+  description: "A browser-based game where knowledge is survival. Test your estimation skills!",
 };
 
 export default function RootLayout({
